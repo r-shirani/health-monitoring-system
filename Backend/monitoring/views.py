@@ -2,6 +2,7 @@ from django.shortcuts import render
 from rest_framework import viewsets
 from .serializers import VitalSignSerializer, DeviceSerializer
 from .models import Device, VitalSign
+from django.contrib.auth.decorators import login_required
 
 class DeviceViewSet(viewsets.ModelViewSet):
     queryset = Device.objects.all()
@@ -18,3 +19,8 @@ class VitalSignViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(device_id=device_id)
 
         return queryset
+    
+@login_required
+def dashboard(request):
+    user_devices = Device.objects.filter(user=request.user)
+    return render(request, 'monitoring/dashboard.html', {'devices' : user_devices})
