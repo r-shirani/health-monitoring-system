@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>داشبورد مانیتورینگ</title>
+</head>
+<body>
+    <h1>خوش آمدید، {{ request.user.username }}</h1>
+    
+    <h2>دستگاه‌های شما:</h2>
+    <ul>
+        {% for device in devices %}
+            <li>
+                دستگاه {{ device.name }} (کد: {{ device.device_id }})
+                - وضعیت: {% if device.is_active %}فعال{% else %}غیرفعال{% endif %}
+            </li>
+        {% empty %}
+            <li>شما هنوز هیچ دستگاهی ثبت نکرده‌اید.</li>
+        {% endfor %}
+    </ul>
+</body>
+<form action="{% url 'logout' %}" method="post">
+    {% csrf_token %}
+    <button type="submit">خروج</button>
+</form>
+</html>
