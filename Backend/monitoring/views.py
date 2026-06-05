@@ -3,17 +3,26 @@ from rest_framework import viewsets
 from .serializers import VitalSignSerializer, DeviceSerializer
 from .models import Device, VitalSign
 from django.contrib.auth.decorators import login_required
+from rest_framework.permissions import IsAuthenticated
 
 class DeviceViewSet(viewsets.ModelViewSet):
-    queryset = Device.objects.all()
     serializer_class = DeviceSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Device.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 class VitalSignViewSet(viewsets.ModelViewSet):
-    queryset = VitalSign.objects.all()
+    queryset = VitalSign.objects.all('-timestamp')
     serializer_class = VitalSignSerializer
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         queryset = super().get_queryset()
+        queryset = queryset.filter(device__user=self.request.user)
         device_id = self.request.query_params.get('device')
         if device_id is not None:
             queryset = queryset.filter(device_id=device_id)
