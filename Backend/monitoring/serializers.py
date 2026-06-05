@@ -4,7 +4,7 @@ from .models import Device, VitalSign
 class DeviceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Device
-        fields = ('device_id', 'user', 'name', 'created_at', 'is_active', 'id',)
+        fields = ('device_id', 'user', 'name', 'created_at', 'is_active', 'id', 'emergency_email')
         read_only_fields = ('created_at',)
 
 class VitalSignSerializer(serializers.ModelSerializer):
