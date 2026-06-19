@@ -6,7 +6,7 @@ from django.contrib.auth import views as auth_views
 
 router = DefaultRouter()
 
-router.register(r'devices', DeviceViewSet, basename='device')
+router.register(r'devices', DeviceViewSet, basename='devices')
 router.register(r'vitals', VitalSignViewSet, basename='vitalSign')
 
 urlpatterns = [
