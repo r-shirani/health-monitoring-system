@@ -18,9 +18,138 @@
             <li>شما هنوز هیچ دستگاهی ثبت نکرده‌اید.</li>
         {% endfor %}
     </ul>
+
+    <hr>
+
+    <h2>ثبت دستگاه جدید:</h2>
+    <form action="" method="post">
+        {% csrf_token %}
+        
+        <label for="device_id">کد منحصربه‌فرد سخت‌افزار (device_id):</label>
+        <input type="text" id="device_id" name="device_id" required>
+        
+        <br><br>
+        
+        <label for="name">نام دلخواه دستگاه:</label>
+        <input type="text" id="name" name="name" required>
+        
+        <br><br>
+        
+        <button type="submit">ثبت دستگاه</button>
+    </form>
+
+    <br><br>
+    <h2>نمودارهای مانیتورینگ علائم حیاتی:</h2>
+    <div style="max-width: 800px; margin: 0 auto;">
+        <canvas id="heartRateChart" width="400" height="200"></canvas>
+        <br><br>
+        <canvas id="oxygenChart" width="400" height="200"></canvas>
+    </div>
+
+    <hr>
+
+    <form action="{% url 'logout' %}" method="post">
+        {% csrf_token %}
+        <button type="submit">خروج</button>
+    </form>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+    let lastProcessedId = null;
+
+    // Heart Rate
+    const ctxHeart = document.getElementById('heartRateChart').getContext('2d');
+    const heartRateChart = new Chart(ctxHeart, {
+        type: 'line',
+        data: {
+            labels: [], 
+            datasets: [{
+                label: 'ضربان قلب (BPM)',
+                data: [], 
+                borderColor: 'rgb(255, 99, 132)',
+                backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            animation: {
+                duration: 0 
+            }
+        }
+    });
+
+    // Blood Oxygen
+    const ctxOxygen = document.getElementById('oxygenChart').getContext('2d');
+    const oxygenChart = new Chart(ctxOxygen, {
+        type: 'line',
+        data: {
+            labels: [], 
+            datasets: [{
+                label: 'سطح اکسیژن خون (SpO2 %)',
+                data: [], 
+                borderColor: 'rgb(54, 162, 235)',
+                backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            animation: {
+                duration: 0
+            }
+        }
+    });
+
+    function updateCharts() {
+        fetch('/vitals/?device=1')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('شبکه با خطا مواجه شد');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data && data.length > 0) {
+                    
+                    const latestRecord = data[0];
+                    
+                    const currentId = latestRecord.id || latestRecord.timestamp;
+
+                    if (currentId === lastProcessedId) {
+                        return;
+                    }
+
+                    lastProcessedId = currentId;
+
+                    heartRateChart.data.labels.push(latestRecord.timestamp);
+                    heartRateChart.data.datasets[0].data.push(latestRecord.heart_rate);
+
+                    oxygenChart.data.labels.push(latestRecord.timestamp);
+                    oxygenChart.data.datasets[0].data.push(latestRecord.oxygen_level);
+
+                    if (heartRateChart.data.labels.length > 20) {
+                        heartRateChart.data.labels.shift();
+                        heartRateChart.data.datasets[0].data.shift();
+                    }
+
+                    if (oxygenChart.data.labels.length > 20) {
+                        oxygenChart.data.labels.shift();
+                        oxygenChart.data.datasets[0].data.shift();
+                    }
+
+                    heartRateChart.update();
+                    oxygenChart.update();
+                }
+            })
+            .catch(error => {
+                console.error('خطا در دریافت اطلاعات از سرور:', error);
+            });
+    }
+
+    updateCharts();
+    setInterval(updateCharts, 2000);
+</script>
 </body>
-<form action="{% url 'logout' %}" method="post">
-    {% csrf_token %}
-    <button type="submit">خروج</button>
-</form>
 </html>
