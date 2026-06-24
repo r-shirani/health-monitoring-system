@@ -8,6 +8,7 @@ class Device(models.Model):
     is_active = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     emergency_email = models.EmailField(blank=True, null=True)
+    last_email_sent = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.device_id} {self.user.username}"
