@@ -8,6 +8,7 @@ from rest_framework.authentication import SessionAuthentication, TokenAuthentica
 from .email import EmergencyEmailService
 from django.utils import timezone
 from datetime import timedelta
+from .tasks import send_async_critical_alert
 
 class DeviceViewSet(viewsets.ModelViewSet):
     serializer_class = DeviceSerializer
@@ -46,18 +47,20 @@ class VitalSignViewSet(viewsets.ModelViewSet):
 
             if heart_rate > 120 or heart_rate < 50 or oxygen_level < 92:
                 now = timezone.now()
-
-                if device.last_email_sent is None or (now - device.last_email_sent) > timedelta(minutes=5):  
-                    device.last_email_sent = timezone.now() 
+                
+                if device.last_email_sent is None or (now - device.last_email_sent) > timedelta(minutes=5):
+                    
+                    device.last_email_sent = now
                     device.save()
-
-                    EmergencyEmailService.send_critical_alert(
-                        email_target= emergency_email,
-                        device_name= device.name,
-                        heart_rate= heart_rate,
-                        oxygen_level= oxygen_level,
-                        timestamp= vital_sign.timestamp
+                    
+                    send_async_critical_alert.delay(
+                        email_target=emergency_email,
+                        device_name=device.name,
+                        heart_rate=heart_rate,
+                        oxygen_level=oxygen_level,
+                        timestamp=vital_sign.timestamp.strftime('%Y-%m-%d %H:%M:%S')
                     )
+                    print("[DJANGO] Critical data received! Task offloaded to Celery. Response sent to hardware immediately.")
     
 @login_required
 def dashboard(request):

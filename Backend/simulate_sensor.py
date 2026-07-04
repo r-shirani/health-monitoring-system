@@ -6,10 +6,10 @@ admin_token = 'Token 4319a69e17510dd61229579d803570dec26575da'
 
 vitals = {}
 
-#create random datas
+#create random data
 for i in range(200):
-    heart_rate = random.randint(60, 100)
-    oxygen_level = random.randint(95, 100)
+    heart_rate = random.randint(40, 150)
+    oxygen_level = random.randint(80, 100)
 
     vitals = {'device': '1', 'heart_rate': heart_rate, 'oxygen_level': oxygen_level}
 
