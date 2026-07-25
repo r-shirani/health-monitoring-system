@@ -2,43 +2,112 @@
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>داشبورد مانیتورینگ</title>
+    <title>داشبورد مانیتورینگ سلامت</title>
+    
+    <!-- استایل‌های تقویم شمسی -->
+    <link rel="stylesheet" href="https://unpkg.com/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css"/>
+
+    <style>
+        body { font-family: Tahoma, sans-serif; margin: 20px; line-height: 1.6; background-color: #f8f9fa; color: #333; }
+        .card { background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #e0e0e0; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .btn { background-color: #007bff; color: white; border: none; padding: 9px 18px; cursor: pointer; border-radius: 5px; font-family: inherit; font-size: 14px; transition: background 0.2s; }
+        .btn:hover { background-color: #0056b3; }
+        .btn-danger { background-color: #dc3545; }
+        .btn-danger:hover { background-color: #bd2130; }
+        select, input[type="text"] { padding: 8px 12px; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; }
+        .form-group { margin-bottom: 15px; }
+        .form-inline { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+        #custom-date-container { display: none; background: #f1f3f5; padding: 12px; border-radius: 6px; margin-top: 10px; width: 100%; }
+    </style>
 </head>
 <body>
     <h1>خوش آمدید، {{ request.user.username }}</h1>
     
-    <h2>دستگاه‌های شما:</h2>
-    <ul>
-        {% for device in devices %}
-            <li>
-                دستگاه {{ device.name }} (کد: {{ device.device_id }})
-                - وضعیت: {% if device.is_active %}فعال{% else %}غیرفعال{% endif %}
-            </li>
-        {% empty %}
-            <li>شما هنوز هیچ دستگاهی ثبت نکرده‌اید.</li>
-        {% endfor %}
-    </ul>
+    <div class="card">
+        <h2>دستگاه‌های شما:</h2>
+        <ul>
+            {% for device in devices %}
+                <li>
+                    دستگاه <strong>{{ device.name }}</strong> (کد: {{ device.device_id }})
+                    - وضعیت: {% if device.is_active %}<span style="color:green; font-weight: bold;">فعال</span>{% else %}<span style="color:red; font-weight: bold;">غیرفعال</span>{% endif %}
+                </li>
+            {% empty %}
+                <li>شما هنوز هیچ دستگاهی ثبت نکرده‌اید.</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- بخش دریافت گزارش PDF علائم حیاتی -->
+    <div class="card" style="border-right: 5px solid #28a745;">
+        <h2>📄 دریافت گزارش PDF سلامت</h2>
+        <form id="report-form" action="{% url 'generate_report_pdf' %}" method="get">
+            <div class="form-inline">
+                <div class="form-group">
+                    <label for="report_device">انتخاب دستگاه:</label>
+                    <select name="device" id="report_device" required>
+                        {% for device in devices %}
+                            <option value="{{ device.id }}">{{ device.name }} (کد: {{ device.device_id }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="period_select">بازه زمانی گزارش:</label>
+                    <select name="range" id="period_select" onchange="toggleCustomDate()">
+                        <option value="today">امروز</option>
+                        <option value="week" selected>۱ هفته اخیر</option>
+                        <option value="month">۱ ماه اخیر</option>
+                        <option value="custom">بازه دلخواه (تقویم شمسی)...</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- تقویم انتخاب تاریخ شمسی (مخفی در حالت اولیه) -->
+            <div id="custom-date-container">
+                <div class="form-inline">
+                    <div class="form-group">
+                        <label for="shamsi_start">تاریخ شروع:</label>
+                        <input type="text" id="shamsi_start" readonly placeholder="انتخاب تاریخ شروع">
+                    </div>
+                    <div class="form-group">
+                        <label for="shamsi_end">تاریخ پایان:</label>
+                        <input type="text" id="shamsi_end" readonly placeholder="انتخاب تاریخ پایان">
+                    </div>
+                </div>
+            </div>
+
+            <!-- فیلدهای مخفی ارسال تاریخ تبدیل‌شده به میلادی -->
+            <input type="hidden" name="start_date" id="gregorian_start">
+            <input type="hidden" name="end_date" id="gregorian_end">
+
+            <div style="margin-top: 15px;">
+                <button type="submit" class="btn" style="background-color: #28a745;">📥 دانلود فایل PDF گزارش</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>ثبت دستگاه جدید:</h2>
+        <form action="" method="post">
+            {% csrf_token %}
+            <div class="form-inline">
+                <div class="form-group">
+                    <label for="device_id">کد منحصربه‌فرد سخت‌افزار (device_id):</label>
+                    <input type="text" id="device_id" name="device_id" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="name">نام دلخواه دستگاه:</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+
+                <button type="submit" class="btn">ثبت دستگاه</button>
+            </div>
+        </form>
+    </div>
 
     <hr>
 
-    <h2>ثبت دستگاه جدید:</h2>
-    <form action="" method="post">
-        {% csrf_token %}
-        
-        <label for="device_id">کد منحصربه‌فرد سخت‌افزار (device_id):</label>
-        <input type="text" id="device_id" name="device_id" required>
-        
-        <br><br>
-        
-        <label for="name">نام دلخواه دستگاه:</label>
-        <input type="text" id="name" name="name" required>
-        
-        <br><br>
-        
-        <button type="submit">ثبت دستگاه</button>
-    </form>
-
-    <br><br>
     <h2>نمودارهای مانیتورینگ علائم حیاتی:</h2>
     <div style="max-width: 800px; margin: 0 auto;">
         <canvas id="heartRateChart" width="400" height="200"></canvas>
@@ -50,15 +119,74 @@
 
     <form action="{% url 'logout' %}" method="post">
         {% csrf_token %}
-        <button type="submit">خروج</button>
+        <button type="submit" class="btn btn-danger">خروج از حساب</button>
     </form>
 
+    <!-- اسکریپت‌های مورد نیاز CDN -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>
+    <script src="https://unpkg.com/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
+    $(document).ready(function() {
+        // فعال‌سازی تقویم شمسی
+        $("#shamsi_start, #shamsi_end").pDatepicker({
+            format: 'YYYY/MM/DD',
+            autoClose: true,
+            initialValue: false
+        });
+    });
+
+    function toggleCustomDate() {
+        const periodSelect = document.getElementById('period_select');
+        const customDateContainer = document.getElementById('custom-date-container');
+
+        if (periodSelect.value === 'custom') {
+            customDateContainer.style.display = 'block';
+        } else {
+            customDateContainer.style.display = 'none';
+        }
+    }
+
+    document.getElementById('report-form').addEventListener('submit', function(e) {
+    const periodSelect = document.getElementById('period_select').value;
+    
+    if (periodSelect === 'custom') {
+        const shamsiStart = document.getElementById('shamsi_start').value;
+        const shamsiEnd = document.getElementById('shamsi_end').value;
+
+        if (!shamsiStart || !shamsiEnd) {
+            e.preventDefault();
+            alert('لطفاً هر دو تاریخ شروع و پایان را انتخاب کنید.');
+            return;
+        }
+
+        const startParts = shamsiStart.split('/').map(Number);
+        const endParts = shamsiEnd.split('/').map(Number);
+
+        const pStart = new persianDate([startParts[0], startParts[1], startParts[2]]);
+        const pEnd = new persianDate([endParts[0], endParts[1], endParts[2]]);
+
+        const gStartDate = pStart.gDate;
+        const gEndDate = pEnd.gDate;
+
+        // YYYY-MM-DD
+        const startFormatted = gStartDate.getFullYear() + '-' + 
+            String(gStartDate.getMonth() + 1).padStart(2, '0') + '-' + 
+            String(gStartDate.getDate()).padStart(2, '0');
+
+        const endFormatted = gEndDate.getFullYear() + '-' + 
+            String(gEndDate.getMonth() + 1).padStart(2, '0') + '-' + 
+            String(gEndDate.getDate()).padStart(2, '0');
+
+        document.getElementById('gregorian_start').value = startFormatted;
+        document.getElementById('gregorian_end').value = endFormatted;
+    }
+});
+
     let lastProcessedId = null;
 
-    // Heart Rate
     const ctxHeart = document.getElementById('heartRateChart').getContext('2d');
     const heartRateChart = new Chart(ctxHeart, {
         type: 'line',
@@ -72,15 +200,9 @@
                 tension: 0.1
             }]
         },
-        options: {
-            responsive: true,
-            animation: {
-                duration: 0 
-            }
-        }
+        options: { responsive: true, animation: { duration: 0 } }
     });
 
-    // Blood Oxygen
     const ctxOxygen = document.getElementById('oxygenChart').getContext('2d');
     const oxygenChart = new Chart(ctxOxygen, {
         type: 'line',
@@ -94,32 +216,21 @@
                 tension: 0.1
             }]
         },
-        options: {
-            responsive: true,
-            animation: {
-                duration: 0
-            }
-        }
+        options: { responsive: true, animation: { duration: 0 } }
     });
 
     function updateCharts() {
         fetch('/vitals/?device=1')
             .then(response => {
-                if (!response.ok) {
-                    throw new Error('شبکه با خطا مواجه شد');
-                }
+                if (!response.ok) throw new Error('شبکه با خطا مواجه شد');
                 return response.json();
             })
             .then(data => {
                 if (data && data.length > 0) {
-                    
                     const latestRecord = data[0];
-                    
                     const currentId = latestRecord.id || latestRecord.timestamp;
 
-                    if (currentId === lastProcessedId) {
-                        return;
-                    }
+                    if (currentId === lastProcessedId) return;
 
                     lastProcessedId = currentId;
 
@@ -143,13 +254,11 @@
                     oxygenChart.update();
                 }
             })
-            .catch(error => {
-                console.error('خطا در دریافت اطلاعات از سرور:', error);
-            });
+            .catch(error => console.error('خطا در دریافت اطلاعات از سرور:', error));
     }
 
     updateCharts();
     setInterval(updateCharts, 2000);
-</script>
+    </script>
 </body>
 </html>
