@@ -9,6 +9,13 @@ from .email import EmergencyEmailService
 from django.utils import timezone
 from datetime import timedelta
 from .tasks import send_async_critical_alert
+from django.http import HttpResponse
+from django.db.models import Avg, Max, Min
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+from .reports import generate_vital_signs_pdf
 
 class DeviceViewSet(viewsets.ModelViewSet):
     serializer_class = DeviceSerializer
@@ -66,3 +73,61 @@ class VitalSignViewSet(viewsets.ModelViewSet):
 def dashboard(request):
     user_devices = Device.objects.filter(user=request.user)
     return render(request, 'monitoring/dashboard.html', {'devices' : user_devices})
+
+@login_required
+def generate_report_pdf(request):
+    date_range = request.GET.get('range', 'today')
+    device_id_req = request.GET.get('device')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    
+    now = timezone.now()
+    start_filter = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    end_filter = now
+    
+    if start_date and end_date:
+        try:
+            start_filter = timezone.datetime.strptime(start_date, '%Y-%m-%d')
+            end_filter = timezone.datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)
+            date_range = 'custom'
+        except ValueError:
+            pass
+    elif date_range == 'week':
+        start_filter = now - timedelta(days=7)
+    elif date_range == 'month':
+        start_filter = now - timedelta(days=30)
+
+    if device_id_req:
+        device = Device.objects.filter(id=device_id_req, user=request.user).first()
+    else:
+        device = Device.objects.filter(user=request.user).first()
+
+    if not device:
+        return HttpResponse("No device found!", status=404)
+        
+    vitals = VitalSign.objects.filter(
+        device=device, 
+        timestamp__range=[start_filter, end_filter]
+    ).order_by('-timestamp')
+
+    stats = vitals.aggregate(
+        avg_hr=Avg('heart_rate'), max_hr=Max('heart_rate'), min_hr=Min('heart_rate'),
+        avg_ox=Avg('oxygen_level'), max_ox=Max('oxygen_level'), min_ox=Min('oxygen_level')
+    )
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="medical_report_{date_range}.pdf"'
+
+    generate_vital_signs_pdf(
+        response_stream=response,
+        device=device,
+        user=request.user,
+        vitals=vitals,
+        stats=stats,
+        date_range=date_range,
+        start_filter=start_filter,
+        end_filter=end_filter,
+        now=now
+    )
+
+    return response
