@@ -2,9 +2,9 @@
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>داشبورد مانیتورینگ سلامت</title>
+    <title id="page-title">داشبورد مانیتورینگ سلامت</title>
     
-    <!-- استایل‌های تقویم شمسی -->
+    <!-- persian calendar styles -->
     <link rel="stylesheet" href="https://unpkg.com/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css"/>
 
     <style>
@@ -14,36 +14,49 @@
         .btn:hover { background-color: #0056b3; }
         .btn-danger { background-color: #dc3545; }
         .btn-danger:hover { background-color: #bd2130; }
-        select, input[type="text"] { padding: 8px 12px; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; }
+        select, input[type="text"], input[type="date"] { padding: 8px 12px; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; }
         .form-group { margin-bottom: 15px; }
         .form-inline { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
-        #custom-date-container { display: none; background: #f1f3f5; padding: 12px; border-radius: 6px; margin-top: 10px; width: 100%; }
+        #shamsi-date-container, #gregorian-date-container { display: none; background: #f1f3f5; padding: 12px; border-radius: 6px; margin-top: 10px; width: 100%; }
+        .lang-switcher { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 15px; }
     </style>
 </head>
 <body>
-    <h1>خوش آمدید، {{ request.user.username }}</h1>
+
+    <!-- switch language button -->
+    <div class="lang-switcher">
+        <button onclick="changeLanguage('fa')" class="btn" style="background: #6c757d;">FA 🇮🇷</button>
+        <button onclick="changeLanguage('en')" class="btn" style="background: #6c757d;">EN 🇬🇧</button>
+    </div>
+
+    <h1 id="welcome-msg">خوش آمدید، {{ request.user.username }}</h1>
     
     <div class="card">
-        <h2>دستگاه‌های شما:</h2>
+        <h2 id="devices-title">دستگاه‌های شما:</h2>
         <ul>
             {% for device in devices %}
                 <li>
-                    دستگاه <strong>{{ device.name }}</strong> (کد: {{ device.device_id }})
-                    - وضعیت: {% if device.is_active %}<span style="color:green; font-weight: bold;">فعال</span>{% else %}<span style="color:red; font-weight: bold;">غیرفعال</span>{% endif %}
+                    <span class="txt-device">دستگاه</span> <strong>{{ device.name }}</strong> (<span class="txt-code">کد:</span> {{ device.device_id }})
+                    - <span class="txt-status">وضعیت:</span> 
+                    {% if device.is_active %}
+                        <span style="color:green; font-weight: bold;" class="txt-active">فعال</span>
+                    {% else %}
+                        <span style="color:red; font-weight: bold;" class="txt-inactive">غیرفعال</span>
+                    {% endif %}
                 </li>
             {% empty %}
-                <li>شما هنوز هیچ دستگاهی ثبت نکرده‌اید.</li>
+                <li id="no-device-text">شما هنوز هیچ دستگاهی ثبت نکرده‌اید.</li>
             {% endfor %}
         </ul>
     </div>
 
-    <!-- بخش دریافت گزارش PDF علائم حیاتی -->
+    <!-- PDF reporting -->
     <div class="card" style="border-right: 5px solid #28a745;">
-        <h2>📄 دریافت گزارش PDF سلامت</h2>
+        <h2 id="pdf-title">📄 دریافت گزارش PDF سلامت</h2>
         <form id="report-form" action="{% url 'generate_report_pdf' %}" method="get">
             <div class="form-inline">
                 <div class="form-group">
-                    <label for="report_device">انتخاب دستگاه:</label>
+                    <label for="report_device" id="label-device">انتخاب دستگاه:</label>
                     <select name="device" id="report_device" required>
                         {% for device in devices %}
                             <option value="{{ device.id }}">{{ device.name }} (کد: {{ device.device_id }})</option>
@@ -52,63 +65,77 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="period_select">بازه زمانی گزارش:</label>
+                    <label for="period_select" id="label-period">بازه زمانی گزارش:</label>
                     <select name="range" id="period_select" onchange="toggleCustomDate()">
-                        <option value="today">امروز</option>
-                        <option value="week" selected>۱ هفته اخیر</option>
-                        <option value="month">۱ ماه اخیر</option>
-                        <option value="custom">بازه دلخواه (تقویم شمسی)...</option>
+                        <option value="today" id="opt-today">امروز</option>
+                        <option value="week" id="opt-week" selected>۱ هفته اخیر</option>
+                        <option value="month" id="opt-month">۱ ماه اخیر</option>
+                        <option value="custom" id="opt-custom">بازه دلخواه...</option>
                     </select>
                 </div>
             </div>
 
-            <!-- تقویم انتخاب تاریخ شمسی (مخفی در حالت اولیه) -->
-            <div id="custom-date-container">
+            <!-- persian calendar -->
+            <div id="shamsi-date-container">
                 <div class="form-inline">
                     <div class="form-group">
-                        <label for="shamsi_start">تاریخ شروع:</label>
+                        <label id="label-shamsi-start">تاریخ شروع:</label>
                         <input type="text" id="shamsi_start" readonly placeholder="انتخاب تاریخ شروع">
                     </div>
                     <div class="form-group">
-                        <label for="shamsi_end">تاریخ پایان:</label>
+                        <label id="label-shamsi-end">تاریخ پایان:</label>
                         <input type="text" id="shamsi_end" readonly placeholder="انتخاب تاریخ پایان">
                     </div>
                 </div>
             </div>
 
-            <!-- فیلدهای مخفی ارسال تاریخ تبدیل‌شده به میلادی -->
+            <!-- english calendar -->
+            <div id="gregorian-date-container">
+                <div class="form-inline">
+                    <div class="form-group">
+                        <label id="label-greg-start">Start Date:</label>
+                        <input type="date" id="greg_start_input">
+                    </div>
+                    <div class="form-group">
+                        <label id="label-greg-end">End Date:</label>
+                        <input type="date" id="greg_end_input">
+                    </div>
+                </div>
+            </div>
+
+            <!-- hidden field to send dates to the backend -->
             <input type="hidden" name="start_date" id="gregorian_start">
             <input type="hidden" name="end_date" id="gregorian_end">
 
             <div style="margin-top: 15px;">
-                <button type="submit" class="btn" style="background-color: #28a745;">📥 دانلود فایل PDF گزارش</button>
+                <button type="submit" class="btn" id="btn-download-pdf" style="background-color: #28a745;">📥 دانلود فایل PDF گزارش</button>
             </div>
         </form>
     </div>
 
     <div class="card">
-        <h2>ثبت دستگاه جدید:</h2>
+        <h2 id="add-device-title">ثبت دستگاه جدید:</h2>
         <form action="" method="post">
             {% csrf_token %}
             <div class="form-inline">
                 <div class="form-group">
-                    <label for="device_id">کد منحصربه‌فرد سخت‌افزار (device_id):</label>
+                    <label for="device_id" id="label-hw-id">کد منحصربه‌فرد سخت‌افزار (device_id):</label>
                     <input type="text" id="device_id" name="device_id" required>
                 </div>
                 
                 <div class="form-group">
-                    <label for="name">نام دلخواه دستگاه:</label>
+                    <label for="name" id="label-device-name">نام دلخواه دستگاه:</label>
                     <input type="text" id="name" name="name" required>
                 </div>
 
-                <button type="submit" class="btn">ثبت دستگاه</button>
+                <button type="submit" class="btn" id="btn-add-device">ثبت دستگاه</button>
             </div>
         </form>
     </div>
 
     <hr>
 
-    <h2>نمودارهای مانیتورینگ علائم حیاتی:</h2>
+    <h2 id="charts-title">نمودارهای مانیتورینگ علائم حیاتی:</h2>
     <div style="max-width: 800px; margin: 0 auto;">
         <canvas id="heartRateChart" width="400" height="200"></canvas>
         <br><br>
@@ -119,74 +146,173 @@
 
     <form action="{% url 'logout' %}" method="post">
         {% csrf_token %}
-        <button type="submit" class="btn btn-danger">خروج از حساب</button>
+        <button type="submit" class="btn btn-danger" id="btn-logout">خروج از حساب</button>
     </form>
 
-    <!-- اسکریپت‌های مورد نیاز CDN -->
+    <!-- libraries -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>
     <script src="https://unpkg.com/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
+    let currentLang = localStorage.getItem('app_lang') || 'fa';
+
     $(document).ready(function() {
-        // فعال‌سازی تقویم شمسی
         $("#shamsi_start, #shamsi_end").pDatepicker({
             format: 'YYYY/MM/DD',
             autoClose: true,
             initialValue: false
         });
+        applyLanguage(currentLang);
     });
 
-    function toggleCustomDate() {
-        const periodSelect = document.getElementById('period_select');
-        const customDateContainer = document.getElementById('custom-date-container');
+    function applyLanguage(lang) {
+        currentLang = lang;
+        localStorage.setItem('app_lang', lang);
+        
+        document.documentElement.dir = lang === 'fa' ? 'rtl' : 'ltr';
+        document.documentElement.lang = lang;
 
-        if (periodSelect.value === 'custom') {
-            customDateContainer.style.display = 'block';
+        if (lang === 'en') {
+            document.getElementById('page-title').innerText = 'Health Monitoring Dashboard';
+            document.getElementById('welcome-msg').innerText = 'Welcome, {{ request.user.username }}';
+            document.getElementById('devices-title').innerText = 'Your Devices:';
+            document.getElementById('pdf-title').innerText = '📄 Download Health PDF Report';
+            document.getElementById('label-device').innerText = 'Select Device:';
+            document.getElementById('label-period').innerText = 'Report Period:';
+            document.getElementById('opt-today').innerText = 'Today';
+            document.getElementById('opt-week').innerText = 'Last 1 Week';
+            document.getElementById('opt-month').innerText = 'Last 1 Month';
+            document.getElementById('opt-custom').innerText = 'Custom Range...';
+            document.getElementById('btn-download-pdf').innerText = '📥 Download PDF Report';
+            document.getElementById('add-device-title').innerText = 'Register New Device:';
+            document.getElementById('label-hw-id').innerText = 'Hardware ID (device_id):';
+            document.getElementById('label-device-name').innerText = 'Custom Device Name:';
+            document.getElementById('btn-add-device').innerText = 'Register Device';
+            document.getElementById('charts-title').innerText = 'Vital Signs Monitoring Charts:';
+            document.getElementById('btn-logout').innerText = 'Logout';
+
+            document.querySelectorAll('.txt-device').forEach(el => el.innerText = 'Device');
+            document.querySelectorAll('.txt-code').forEach(el => el.innerText = 'Code:');
+            document.querySelectorAll('.txt-status').forEach(el => el.innerText = 'Status:');
+            document.querySelectorAll('.txt-active').forEach(el => el.innerText = 'Active');
+            document.querySelectorAll('.txt-inactive').forEach(el => el.innerText = 'Inactive');
+
+            if (typeof heartRateChart !== 'undefined' && typeof oxygenChart !== 'undefined') {
+                heartRateChart.data.datasets[0].label = 'Heart Rate (BPM)';
+                heartRateChart.update();
+                oxygenChart.data.datasets[0].label = 'Blood Oxygen Level (SpO2 %)';
+                oxygenChart.update();
+            }
+
         } else {
-            customDateContainer.style.display = 'none';
+            document.getElementById('page-title').innerText = 'داشبورد مانیتورینگ سلامت';
+            document.getElementById('welcome-msg').innerText = 'خوش آمدید، {{ request.user.username }}';
+            document.getElementById('devices-title').innerText = 'دستگاه‌های شما:';
+            document.getElementById('pdf-title').innerText = '📄 دریافت گزارش PDF سلامت';
+            document.getElementById('label-device').innerText = 'انتخاب دستگاه:';
+            document.getElementById('label-period').innerText = 'بازه زمانی گزارش:';
+            document.getElementById('opt-today').innerText = 'امروز';
+            document.getElementById('opt-week').innerText = '۱ هفته اخیر';
+            document.getElementById('opt-month').innerText = '۱ ماه اخیر';
+            document.getElementById('opt-custom').innerText = 'بازه دلخواه...';
+            document.getElementById('btn-download-pdf').innerText = '📥 دانلود فایل PDF گزارش';
+            document.getElementById('add-device-title').innerText = 'ثبت دستگاه جدید:';
+            document.getElementById('label-hw-id').innerText = 'کد منحصربه‌فرد سخت‌افزار (device_id):';
+            document.getElementById('label-device-name').innerText = 'نام دلخواه دستگاه:';
+            document.getElementById('btn-add-device').innerText = 'ثبت دستگاه';
+            document.getElementById('charts-title').innerText = 'نمودارهای مانیتورینگ علائم حیاتی:';
+            document.getElementById('btn-logout').innerText = 'خروج از حساب';
+
+            document.querySelectorAll('.txt-device').forEach(el => el.innerText = 'دستگاه');
+            document.querySelectorAll('.txt-code').forEach(el => el.innerText = 'کد:');
+            document.querySelectorAll('.txt-status').forEach(el => el.innerText = 'وضعیت:');
+            document.querySelectorAll('.txt-active').forEach(el => el.innerText = 'فعال');
+            document.querySelectorAll('.txt-inactive').forEach(el => el.innerText = 'غیرفعال');
+
+            if (typeof heartRateChart !== 'undefined' && typeof oxygenChart !== 'undefined') {
+                heartRateChart.data.datasets[0].label = 'ضربان قلب (BPM)';
+                heartRateChart.update();
+                oxygenChart.data.datasets[0].label = 'سطح اکسیژن خون (% SpO2)';
+                oxygenChart.update();
+            }
         }
+
+        toggleCustomDate();
+    }
+
+    function toggleCustomDate() {
+        const periodSelect = document.getElementById('period_select').value;
+        const shamsiContainer = document.getElementById('shamsi-date-container');
+        const gregContainer = document.getElementById('gregorian-date-container');
+
+        if (periodSelect === 'custom') {
+            if (currentLang === 'fa') {
+                shamsiContainer.style.display = 'block';
+                gregContainer.style.display = 'none';
+            } else {
+                shamsiContainer.style.display = 'none';
+                gregContainer.style.display = 'block';
+            }
+        } else {
+            shamsiContainer.style.display = 'none';
+            gregContainer.style.display = 'none';
+        }
+    }
+
+    function changeLanguage(lang) {
+        applyLanguage(lang);
     }
 
     document.getElementById('report-form').addEventListener('submit', function(e) {
-    const periodSelect = document.getElementById('period_select').value;
-    
-    if (periodSelect === 'custom') {
-        const shamsiStart = document.getElementById('shamsi_start').value;
-        const shamsiEnd = document.getElementById('shamsi_end').value;
+        const periodSelect = document.getElementById('period_select').value;
+        
+        if (periodSelect === 'custom') {
+            if (currentLang === 'fa') {
+                const shamsiStart = document.getElementById('shamsi_start').value;
+                const shamsiEnd = document.getElementById('shamsi_end').value;
 
-        if (!shamsiStart || !shamsiEnd) {
-            e.preventDefault();
-            alert('لطفاً هر دو تاریخ شروع و پایان را انتخاب کنید.');
-            return;
+                if (!shamsiStart || !shamsiEnd) {
+                    e.preventDefault();
+                    alert('لطفاً هر دو تاریخ شروع و پایان را انتخاب کنید.');
+                    return;
+                }
+
+                const startParts = shamsiStart.split('/').map(Number);
+                const endParts = shamsiEnd.split('/').map(Number);
+
+                const pStart = new persianDate([startParts[0], startParts[1], startParts[2]]);
+                const pEnd = new persianDate([endParts[0], endParts[1], endParts[2]]);
+
+                const gStartDate = pStart.gDate;
+                const gEndDate = pEnd.gDate;
+
+                document.getElementById('gregorian_start').value = gStartDate.getFullYear() + '-' + 
+                    String(gStartDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                    String(gStartDate.getDate()).padStart(2, '0');
+
+                document.getElementById('gregorian_end').value = gEndDate.getFullYear() + '-' + 
+                    String(gEndDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                    String(gEndDate.getDate()).padStart(2, '0');
+            } else {
+                const gregStart = document.getElementById('greg_start_input').value;
+                const gregEnd = document.getElementById('greg_end_input').value;
+
+                if (!gregStart || !gregEnd) {
+                    e.preventDefault();
+                    alert('Please select both start and end dates.');
+                    return;
+                }
+
+                document.getElementById('gregorian_start').value = gregStart;
+                document.getElementById('gregorian_end').value = gregEnd;
+            }
         }
+    });
 
-        const startParts = shamsiStart.split('/').map(Number);
-        const endParts = shamsiEnd.split('/').map(Number);
-
-        const pStart = new persianDate([startParts[0], startParts[1], startParts[2]]);
-        const pEnd = new persianDate([endParts[0], endParts[1], endParts[2]]);
-
-        const gStartDate = pStart.gDate;
-        const gEndDate = pEnd.gDate;
-
-        // YYYY-MM-DD
-        const startFormatted = gStartDate.getFullYear() + '-' + 
-            String(gStartDate.getMonth() + 1).padStart(2, '0') + '-' + 
-            String(gStartDate.getDate()).padStart(2, '0');
-
-        const endFormatted = gEndDate.getFullYear() + '-' + 
-            String(gEndDate.getMonth() + 1).padStart(2, '0') + '-' + 
-            String(gEndDate.getDate()).padStart(2, '0');
-
-        document.getElementById('gregorian_start').value = startFormatted;
-        document.getElementById('gregorian_end').value = endFormatted;
-    }
-});
-
+    // Chart.js configuration
     let lastProcessedId = null;
-
     const ctxHeart = document.getElementById('heartRateChart').getContext('2d');
     const heartRateChart = new Chart(ctxHeart, {
         type: 'line',
@@ -221,17 +347,13 @@
 
     function updateCharts() {
         fetch('/vitals/?device=1')
-            .then(response => {
-                if (!response.ok) throw new Error('شبکه با خطا مواجه شد');
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
                 if (data && data.length > 0) {
                     const latestRecord = data[0];
                     const currentId = latestRecord.id || latestRecord.timestamp;
 
                     if (currentId === lastProcessedId) return;
-
                     lastProcessedId = currentId;
 
                     heartRateChart.data.labels.push(latestRecord.timestamp);
@@ -244,7 +366,6 @@
                         heartRateChart.data.labels.shift();
                         heartRateChart.data.datasets[0].data.shift();
                     }
-
                     if (oxygenChart.data.labels.length > 20) {
                         oxygenChart.data.labels.shift();
                         oxygenChart.data.datasets[0].data.shift();
@@ -253,8 +374,7 @@
                     heartRateChart.update();
                     oxygenChart.update();
                 }
-            })
-            .catch(error => console.error('خطا در دریافت اطلاعات از سرور:', error));
+            });
     }
 
     updateCharts();
