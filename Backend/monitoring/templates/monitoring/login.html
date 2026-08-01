@@ -2,26 +2,69 @@
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>ورود به سیستم</title>
+    <title id="page-title">ورود به سیستم</title>
+    <style>
+        body { font-family: Tahoma, sans-serif; background-color: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-card { background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 320px; position: relative; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], input[type="password"] { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .btn { width: 100%; background: #007bff; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-size: 16px; margin-top: 10px; }
+        .btn:hover { background: #0056b3; }
+        .lang-switcher { display: flex; justify-content: flex-end; gap: 5px; margin-bottom: 15px; }
+        .btn-lang { background: #e0e0e0; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    </style>
 </head>
 <body>
-    <h2>ورود به سیستم مانیتورینگ سلامت</h2>
-    
-    {% if form.errors %}
-        <p style="color: red;">نام کاربری یا رمز عبور اشتباه است.</p>
-    {% endif %}
 
-    <form method="post" action="{% url 'login' %}">
+<div class="login-card">
+    <div class="lang-switcher">
+        <button onclick="setLoginLang('fa')" class="btn-lang">FA 🇮🇷</button>
+        <button onclick="setLoginLang('en')" class="btn-lang">EN 🇬🇧</button>
+    </div>
+
+    <h2 id="login-title" style="text-align: center; margin-top: 0;">ورود به سیستم</h2>
+    
+    <form method="post">
         {% csrf_token %}
-        <div>
-            <label>نام کاربری:</label>
-            {{ form.username }}
+        <div class="form-group">
+            <label id="label-user" for="username">نام کاربری:</label>
+            <input type="text" id="username" name="username" required>
         </div>
-        <div>
-            <label>رمز عبور:</label>
-            {{ form.password }}
+        <div class="form-group">
+            <label id="label-pass" for="password">رمز عبور:</label>
+            <input type="password" id="password" name="password" required>
         </div>
-        <button type="submit">ورود</button>
+        <button type="submit" class="btn" id="btn-login">ورود</button>
     </form>
+</div>
+
+<script>
+function setLoginLang(lang) {
+    localStorage.setItem('app_lang', lang);
+    document.documentElement.dir = lang === 'fa' ? 'rtl' : 'ltr';
+    document.documentElement.lang = lang;
+
+    if (lang === 'en') {
+        document.getElementById('page-title').innerText = 'System Login';
+        document.getElementById('login-title').innerText = 'System Login';
+        document.getElementById('label-user').innerText = 'Username:';
+        document.getElementById('label-pass').innerText = 'Password:';
+        document.getElementById('btn-login').innerText = 'Login';
+    } else {
+        document.getElementById('page-title').innerText = 'ورود به سیستم';
+        document.getElementById('login-title').innerText = 'ورود به سیستم';
+        document.getElementById('label-user').innerText = 'نام کاربری:';
+        document.getElementById('label-pass').innerText = 'رمز عبور:';
+        document.getElementById('btn-login').innerText = 'ورود';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const lang = localStorage.getItem('app_lang') || 'fa';
+    setLoginLang(lang);
+});
+</script>
+
 </body>
 </html>
