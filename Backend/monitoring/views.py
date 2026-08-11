@@ -5,17 +5,14 @@ from .models import Device, VitalSign
 from django.contrib.auth.decorators import login_required
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
-from .email import EmergencyEmailService
 from django.utils import timezone
 from datetime import timedelta
 from .tasks import send_async_critical_alert
 from django.http import HttpResponse
 from django.db.models import Avg, Max, Min
-from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib import colors
 from .reports import generate_vital_signs_pdf
+from django.http import JsonResponse
+from .ai_service import analyze_vitals_with_ai
 
 class DeviceViewSet(viewsets.ModelViewSet):
     serializer_class = DeviceSerializer
@@ -131,3 +128,71 @@ def generate_report_pdf(request):
     )
 
     return response
+
+@login_required
+def analyze_range_ai(request):
+    date_range = request.GET.get('range', 'today')
+    device_id_req = request.GET.get('device')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    now = timezone.now()
+    start_filter = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    end_filter = now
+
+    if date_range == 'custom' and start_date and end_date:
+        try:
+            start_filter = timezone.datetime.strptime(start_date, '%Y-%m-%d')
+            end_filter = timezone.datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)
+        except ValueError:
+            pass
+    elif date_range == 'week':
+        start_filter = now - timedelta(days=7)
+    elif date_range == 'month':
+        start_filter = now - timedelta(days=30)
+
+    device = Device.objects.filter(id=device_id_req, user=request.user).first() if device_id_req else Device.objects.filter(user=request.user).first()
+    if not device:
+        return JsonResponse({'status': 'no_device', 'analysis': None}, status=404)
+
+    vitals_qs = VitalSign.objects.filter(device=device, timestamp__range=[start_filter, end_filter]).order_by('timestamp')
+    total_count = vitals_qs.count()
+
+    if total_count == 0:
+        return JsonResponse({'status': 'empty', 'analysis': None})
+
+    # sampling to prevent maximum reached Token error
+    MAX_SAMPLES = 200
+    if total_count > MAX_SAMPLES:
+        step = total_count // MAX_SAMPLES
+        vitals = list(vitals_qs[::step])[:MAX_SAMPLES]
+    else:
+        vitals = list(vitals_qs)
+
+    csv_lines = ["timestamp,heart_rate,oxygen_level"]
+    for v in vitals:
+        csv_lines.append(f"{v.timestamp.strftime('%Y-%m-%d %H:%M:%S')},{v.heart_rate},{v.oxygen_level}")
+    vitals_csv_text = "\n".join(csv_lines)
+
+    analysis_dict = analyze_vitals_with_ai(vitals_csv_text, is_session=False)
+    return JsonResponse({'status': 'success', 'analysis': analysis_dict})
+
+
+@login_required
+def analyze_last_session_ai(request):
+    device_id = request.GET.get('device')
+
+    if not device_id:
+        return JsonResponse({'status': 'no_device_selected', 'analysis': None}, status=400)
+
+    vitals = VitalSign.objects.filter(device_id=device_id).order_by('-timestamp')[:20]
+    if not vitals.exists():
+        return JsonResponse({'status': 'empty', 'analysis': None})
+
+    csv_lines = ["timestamp,heart_rate,oxygen_level"]
+    for v in reversed(vitals):
+        csv_lines.append(f"{v.timestamp.strftime('%Y-%m-%d %H:%M:%S')},{v.heart_rate},{v.oxygen_level}")
+    vitals_csv_text = "\n".join(csv_lines)
+
+    analysis_dict = analyze_vitals_with_ai(vitals_csv_text, is_session=True)
+    return JsonResponse({'status': 'success', 'analysis': analysis_dict})
