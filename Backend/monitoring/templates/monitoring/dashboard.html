@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title id="page-title">داشبورد مانیتورینگ سلامت</title>
-    
     <!-- persian calendar styles -->
     <link rel="stylesheet" href="https://unpkg.com/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css"/>
-
     <style>
         body { font-family: Tahoma, sans-serif; margin: 20px; line-height: 1.6; background-color: #f8f9fa; color: #333; }
         .card { background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #e0e0e0; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
@@ -17,20 +15,18 @@
         select, input[type="text"], input[type="date"] { padding: 8px 12px; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; }
         .form-group { margin-bottom: 15px; }
         .form-inline { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
-        #shamsi-date-container, #gregorian-date-container { display: none; background: #f1f3f5; padding: 12px; border-radius: 6px; margin-top: 10px; width: 100%; }
+        #shamsi-date-container, #gregorian-date-container, #ai-shamsi-date-container, #ai-gregorian-date-container { display: none; background: #f1f3f5; padding: 12px; border-radius: 6px; margin-top: 10px; width: 100%; }
         .lang-switcher { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 15px; }
     </style>
 </head>
 <body>
-
     <!-- switch language button -->
     <div class="lang-switcher">
         <button onclick="changeLanguage('fa')" class="btn" style="background: #6c757d;">FA 🇮🇷</button>
         <button onclick="changeLanguage('en')" class="btn" style="background: #6c757d;">EN 🇬🇧</button>
     </div>
-
     <h1 id="welcome-msg">خوش آمدید، {{ request.user.username }}</h1>
-    
+  
     <div class="card">
         <h2 id="devices-title">دستگاه‌های شما:</h2>
         <ul>
@@ -63,7 +59,6 @@
                         {% endfor %}
                     </select>
                 </div>
-
                 <div class="form-group">
                     <label for="period_select" id="label-period">بازه زمانی گزارش:</label>
                     <select name="range" id="period_select" onchange="toggleCustomDate()">
@@ -103,14 +98,80 @@
                 </div>
             </div>
 
-            <!-- hidden field to send dates to the backend -->
             <input type="hidden" name="start_date" id="gregorian_start">
             <input type="hidden" name="end_date" id="gregorian_end">
-
             <div style="margin-top: 15px;">
                 <button type="submit" class="btn" id="btn-download-pdf" style="background-color: #28a745;">📥 دانلود فایل PDF گزارش</button>
             </div>
         </form>
+    </div>
+
+    <!-- AI Analyze card -->
+    <div class="card" style="border-right: 5px solid #6f42c1;">
+        <h2 id="ai-title">🤖 تحلیل هوشمند سلامت (AI Health Insights)</h2>
+        <p style="font-size: 13px; color: #666;" id="ai-desc">
+            دستگاه و بازه‌ی مورد نظر را انتخاب کنید تا وضعیت علائم حیاتی شما توسط هوش مصنوعی بررسی شود.
+        </p>
+        <div class="form-inline">
+            <div class="form-group">
+                <label for="ai_device" id="label-ai-device">انتخاب دستگاه:</label>
+                <select id="ai_device" required>
+                    {% for device in devices %}
+                        <option value="{{ device.id }}">{{ device.name }} (کد: {{ device.device_id }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="ai_period_select" id="label-ai-period">بازه زمانی:</label>
+                <select id="ai_period_select" onchange="toggleAiCustomDate()">
+                    <option value="today" id="opt-ai-today">امروز</option>
+                    <option value="week" id="opt-ai-week" selected>۱ هفته اخیر</option>
+                    <option value="month" id="opt-ai-month">۱ ماه اخیر</option>
+                    <option value="custom" id="opt-ai-custom">بازه دلخواه...</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <button type="button" class="btn" id="btn-run-ai" style="background-color: #6f42c1;" onclick="runRangeAI()">
+                    🧠 تحلیل وضعیت بازه انتخابی
+                </button>
+                <button type="button" class="btn" id="btn-run-ai-session" style="background-color: #17a2b8;" onclick="runSessionAI()">
+                    ⚡ تحلیل آنی آخرین جلسه پایش
+                </button>
+            </div>
+        </div>
+
+        <div id="ai-shamsi-date-container">
+            <div class="form-inline">
+                <div class="form-group">
+                    <label id="label-ai-shamsi-start">تاریخ شروع:</label>
+                    <input type="text" id="ai_shamsi_start" readonly placeholder="انتخاب تاریخ شروع">
+                </div>
+                <div class="form-group">
+                    <label id="label-ai-shamsi-end">تاریخ پایان:</label>
+                    <input type="text" id="ai_shamsi_end" readonly placeholder="انتخاب تاریخ پایان">
+                </div>
+            </div>
+        </div>
+
+        <div id="ai-gregorian-date-container">
+            <div class="form-inline">
+                <div class="form-group">
+                    <label id="label-ai-greg-start">Start Date:</label>
+                    <input type="date" id="ai_greg_start_input">
+                </div>
+                <div class="form-group">
+                    <label id="label-ai-greg-end">End Date:</label>
+                    <input type="date" id="ai_greg_end_input">
+                </div>
+            </div>
+        </div>
+
+        <!-- analyze result -->
+        <div id="ai-result-container" style="display: none; margin-top: 15px; background: #f3f0ff; padding: 15px; border-radius: 6px;">
+            <h4 style="margin-top: 0; color: #5a2ca0;" id="ai-result-title">نتیجه تحلیل:</h4>
+            <div id="ai-loading" style="display: none; font-weight: bold; color: #6f42c1;">در حال پردازش داده‌ها و دریافت تحلیل از هوش مصنوعی... ⏳</div>
+            <p id="ai-text" style="white-space: pre-line; margin-bottom: 0;"></p>
+        </div>
     </div>
 
     <div class="card">
@@ -144,7 +205,7 @@
 
     <hr>
 
-    <form action="{% url 'logout' %}" method="post">
+    <form action="{% url 'logout' %}" method="post" onsubmit="clearLocalStorageOnLogout()">
         {% csrf_token %}
         <button type="submit" class="btn btn-danger" id="btn-logout">خروج از حساب</button>
     </form>
@@ -157,15 +218,94 @@
 
     <script>
     let currentLang = localStorage.getItem('app_lang') || 'fa';
+    let currentAnalysisObj = null;
+
+    // تابع مطمئن تبدیل هرگونه عدد فارسی/عربی به انگلیسی
+    function toEnglishDigits(str) {
+        if (!str) return '';
+        const fa = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+        const ar = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+        let res = str.toString();
+        for (let i = 0; i < 10; i++) {
+            res = res.replace(new RegExp(fa[i], 'g'), i).replace(new RegExp(ar[i], 'g'), i);
+        }
+        return res;
+    }
+
+    // تابع مطمئن تبدیل تاریخ شمسی به میلادی استاندارد YYYY-MM-DD
+    function convertShamsiToGregorian(shamsiStr) {
+        let cleanStr = toEnglishDigits(shamsiStr).trim();
+        let parts = cleanStr.split('/').map(p => parseInt(p, 10));
+        if (parts.length !== 3 || parts.some(isNaN)) {
+            throw new Error("Invalid date format");
+        }
+        
+        // استفاده مستقیم از متد pDatepicker/persianDate
+        let pDate = new persianDate([parts[0], parts[1], parts[2]]);
+        let gDate = pDate.toDate(); // گرفتن شیء Date استاندارد JS
+        
+        let year = gDate.getFullYear();
+        let month = String(gDate.getMonth() + 1).padStart(2, '0');
+        let day = String(gDate.getDate()).padStart(2, '0');
+        
+        return `${year}-${month}-${day}`;
+    }
 
     $(document).ready(function() {
-        $("#shamsi_start, #shamsi_end").pDatepicker({
+        $("#shamsi_start, #shamsi_end, #ai_shamsi_start, #ai_shamsi_end").pDatepicker({
             format: 'YYYY/MM/DD',
             autoClose: true,
             initialValue: false
         });
+
         applyLanguage(currentLang);
+
+        const savedAnalysis = localStorage.getItem('last_ai_analysis');
+        if (savedAnalysis) {
+            try {
+                currentAnalysisObj = JSON.parse(savedAnalysis);
+                document.getElementById('ai-result-container').style.display = 'block';
+                displayAnalysisByLang();
+            } catch (e) {
+                console.error("Error parsing saved analysis", e);
+            }
+        }
     });
+
+    function toggleAiCustomDate() {
+        const periodSelect = document.getElementById('ai_period_select').value;
+        const shamsiContainer = document.getElementById('ai-shamsi-date-container');
+        const gregContainer = document.getElementById('ai-gregorian-date-container');
+
+        if (periodSelect === 'custom') {
+            if (currentLang === 'fa') {
+                shamsiContainer.style.display = 'block';
+                gregContainer.style.display = 'none';
+            } else {
+                shamsiContainer.style.display = 'none';
+                gregContainer.style.display = 'block';
+            }
+        } else {
+            shamsiContainer.style.display = 'none';
+            gregContainer.style.display = 'none';
+        }
+    }
+
+    function displayAnalysisByLang() {
+        const textBox = document.getElementById('ai-text');
+        if (!textBox || !currentAnalysisObj) return;
+
+        if (typeof currentAnalysisObj === 'string') {
+            textBox.innerText = currentAnalysisObj;
+            return;
+        }
+
+        if (currentLang === 'fa') {
+            textBox.innerText = currentAnalysisObj.fa || currentAnalysisObj.en || '';
+        } else {
+            textBox.innerText = currentAnalysisObj.en || currentAnalysisObj.fa || '';
+        }
+    }
 
     function applyLanguage(lang) {
         currentLang = lang;
@@ -186,6 +326,20 @@
             document.getElementById('opt-month').innerText = 'Last 1 Month';
             document.getElementById('opt-custom').innerText = 'Custom Range...';
             document.getElementById('btn-download-pdf').innerText = '📥 Download PDF Report';
+            
+            document.getElementById('ai-title').innerText = '🤖 AI Health Insights';
+            document.getElementById('ai-desc').innerText = 'Select a device and time range to analyze your vital signs with AI.';
+            document.getElementById('label-ai-device').innerText = 'Select Device:';
+            document.getElementById('label-ai-period').innerText = 'Period:';
+            document.getElementById('opt-ai-today').innerText = 'Today';
+            document.getElementById('opt-ai-week').innerText = 'Last 1 Week';
+            document.getElementById('opt-ai-month').innerText = 'Last 1 Month';
+            document.getElementById('opt-ai-custom').innerText = 'Custom Range...';
+            document.getElementById('btn-run-ai').innerText = '🧠 Selected Range AI Analysis';
+            document.getElementById('btn-run-ai-session').innerText = '⚡ Last Session Instant Analysis';
+            document.getElementById('ai-result-title').innerText = 'Analysis Result:';
+            document.getElementById('ai-loading').innerText = 'Processing data with AI... ⏳';
+
             document.getElementById('add-device-title').innerText = 'Register New Device:';
             document.getElementById('label-hw-id').innerText = 'Hardware ID (device_id):';
             document.getElementById('label-device-name').innerText = 'Custom Device Name:';
@@ -218,19 +372,30 @@
             document.getElementById('opt-month').innerText = '۱ ماه اخیر';
             document.getElementById('opt-custom').innerText = 'بازه دلخواه...';
             document.getElementById('btn-download-pdf').innerText = '📥 دانلود فایل PDF گزارش';
+          
+            document.getElementById('ai-title').innerText = '🤖 تحلیل هوشمند سلامت (AI Health Insights)';
+            document.getElementById('ai-desc').innerText = 'دستگاه و بازه‌ی مورد نظر را انتخاب کنید تا وضعیت علائم حیاتی شما توسط هوش مصنوعی بررسی شود.';
+            document.getElementById('label-ai-device').innerText = 'انتخاب دستگاه:';
+            document.getElementById('label-ai-period').innerText = 'بازه زمانی:';
+            document.getElementById('opt-ai-today').innerText = 'امروز';
+            document.getElementById('opt-ai-week').innerText = '۱ هفته اخیر';
+            document.getElementById('opt-ai-month').innerText = '۱ ماه اخیر';
+            document.getElementById('opt-ai-custom').innerText = 'بازه دلخواه...';
+            document.getElementById('btn-run-ai').innerText = '🧠 تحلیل وضعیت بازه انتخابی';
+            document.getElementById('btn-run-ai-session').innerText = '⚡ تحلیل آنی آخرین جلسه پایش';
+            document.getElementById('ai-result-title').innerText = 'نتیجه تحلیل:';
+            document.getElementById('ai-loading').innerText = 'در حال پردازش داده‌ها و دریافت تحلیل از هوش مصنوعی... ⏳';
             document.getElementById('add-device-title').innerText = 'ثبت دستگاه جدید:';
             document.getElementById('label-hw-id').innerText = 'کد منحصربه‌فرد سخت‌افزار (device_id):';
             document.getElementById('label-device-name').innerText = 'نام دلخواه دستگاه:';
             document.getElementById('btn-add-device').innerText = 'ثبت دستگاه';
             document.getElementById('charts-title').innerText = 'نمودارهای مانیتورینگ علائم حیاتی:';
             document.getElementById('btn-logout').innerText = 'خروج از حساب';
-
             document.querySelectorAll('.txt-device').forEach(el => el.innerText = 'دستگاه');
             document.querySelectorAll('.txt-code').forEach(el => el.innerText = 'کد:');
             document.querySelectorAll('.txt-status').forEach(el => el.innerText = 'وضعیت:');
             document.querySelectorAll('.txt-active').forEach(el => el.innerText = 'فعال');
             document.querySelectorAll('.txt-inactive').forEach(el => el.innerText = 'غیرفعال');
-
             if (typeof heartRateChart !== 'undefined' && typeof oxygenChart !== 'undefined') {
                 heartRateChart.data.datasets[0].label = 'ضربان قلب (BPM)';
                 heartRateChart.update();
@@ -239,14 +404,15 @@
             }
         }
 
+        displayAnalysisByLang();
         toggleCustomDate();
+        toggleAiCustomDate();
     }
 
     function toggleCustomDate() {
         const periodSelect = document.getElementById('period_select').value;
         const shamsiContainer = document.getElementById('shamsi-date-container');
         const gregContainer = document.getElementById('gregorian-date-container');
-
         if (periodSelect === 'custom') {
             if (currentLang === 'fa') {
                 shamsiContainer.style.display = 'block';
@@ -265,46 +431,155 @@
         applyLanguage(lang);
     }
 
-    document.getElementById('report-form').addEventListener('submit', function(e) {
-        const periodSelect = document.getElementById('period_select').value;
+    function runRangeAI() {
+        const deviceId = document.getElementById('ai_device').value;
+        const periodSelect = document.getElementById('ai_period_select').value;
+        const resultBox = document.getElementById('ai-result-container');
+        const loadingBox = document.getElementById('ai-loading');
+        const textBox = document.getElementById('ai-text');
         
+        let startDate = '';
+        let endDate = '';
+
         if (periodSelect === 'custom') {
             if (currentLang === 'fa') {
-                const shamsiStart = document.getElementById('shamsi_start').value;
-                const shamsiEnd = document.getElementById('shamsi_end').value;
-
+                let shamsiStart = document.getElementById('ai_shamsi_start').value;
+                let shamsiEnd = document.getElementById('ai_shamsi_end').value;
                 if (!shamsiStart || !shamsiEnd) {
-                    e.preventDefault();
-                    alert('لطفاً هر دو تاریخ شروع و پایان را انتخاب کنید.');
+                    alert('لطفاً تاریخ شروع و پایان را انتخاب کنید.');
+                    return;
+                }
+                try {
+                    startDate = convertShamsiToGregorian(shamsiStart);
+                    endDate = convertShamsiToGregorian(shamsiEnd);
+                } catch(err) {
+                    alert('فرمت تاریخ انتخابی نامعتبر است.');
+                    return;
+                }
+            } else {
+                startDate = document.getElementById('ai_greg_start_input').value;
+                endDate = document.getElementById('ai_greg_end_input').value;
+                if (!startDate || !endDate) {
+                    alert('Please select both start and end dates.');
+                    return;
+                }
+            }
+        }
+
+        resultBox.style.display = 'block';
+        loadingBox.style.display = 'block';
+        textBox.innerText = '';
+        
+        let url = `/api/analyze-ai-range/?device=${deviceId}&range=${periodSelect}&start_date=${startDate}&end_date=${endDate}`;
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                loadingBox.style.display = 'none';
+                
+                if (data.status === 'empty') {
+                    currentAnalysisObj = {
+                        fa: 'هیچ داده‌ای در این بازه یافت نشد!',
+                        en: 'No data found in this range to analyze!'
+                    };
+                    displayAnalysisByLang();
+                    return;
+                }
+                if (data.status === 'no_device') {
+                    currentAnalysisObj = {
+                        fa: 'دستگاهی یافت نشد!',
+                        en: 'No device found!'
+                    };
+                    displayAnalysisByLang();
                     return;
                 }
 
-                const startParts = shamsiStart.split('/').map(Number);
-                const endParts = shamsiEnd.split('/').map(Number);
+                currentAnalysisObj = data.analysis;
+                localStorage.setItem('last_ai_analysis', JSON.stringify(currentAnalysisObj));
+                displayAnalysisByLang();
+            })
+            .catch(() => {
+                loadingBox.style.display = 'none';
+                textBox.innerText = currentLang === 'fa' ? 'خطا در برقراری ارتباط با سرور.' : 'Error connecting to server.';
+            });
+    }
 
-                const pStart = new persianDate([startParts[0], startParts[1], startParts[2]]);
-                const pEnd = new persianDate([endParts[0], endParts[1], endParts[2]]);
+    function runSessionAI() {
+        const deviceId = document.getElementById('ai_device').value;
+        const resultBox = document.getElementById('ai-result-container');
+        const loadingBox = document.getElementById('ai-loading');
+        const textBox = document.getElementById('ai-text');
+        resultBox.style.display = 'block';
+        loadingBox.style.display = 'block';
+        textBox.innerText = '';
 
-                const gStartDate = pStart.gDate;
-                const gEndDate = pEnd.gDate;
+        fetch(`/api/analyze-ai-session/?device=${deviceId}`)
+            .then(res => res.json())
+            .then(data => {
+                loadingBox.style.display = 'none';
 
-                document.getElementById('gregorian_start').value = gStartDate.getFullYear() + '-' + 
-                    String(gStartDate.getMonth() + 1).padStart(2, '0') + '-' + 
-                    String(gStartDate.getDate()).padStart(2, '0');
+                if (data.status === 'empty') {
+                    currentAnalysisObj = {
+                        fa: 'هیچ داده‌ای یافت نشد!',
+                        en: 'No data found!'
+                    };
+                    displayAnalysisByLang();
+                    return;
+                }
+                if (data.status === 'no_device_selected') {
+                    currentAnalysisObj = {
+                        fa: 'دستگاهی انتخاب نشده است.',
+                        en: 'No device is selected.'
+                    };
+                    displayAnalysisByLang();
+                    return;
+                }
 
-                document.getElementById('gregorian_end').value = gEndDate.getFullYear() + '-' + 
-                    String(gEndDate.getMonth() + 1).padStart(2, '0') + '-' + 
-                    String(gEndDate.getDate()).padStart(2, '0');
+                currentAnalysisObj = data.analysis;
+                localStorage.setItem('last_ai_analysis', JSON.stringify(currentAnalysisObj));
+                displayAnalysisByLang();
+            })
+            .catch(() => {
+                loadingBox.style.display = 'none';
+                textBox.innerText = currentLang === 'fa' ? 'خطا در دریافت تحلیل آنی.' : 'Error fetching instant analysis.';
+            });
+    }
+
+    let dataTimeout = null;
+    function onNewDataReceived() {
+        clearTimeout(dataTimeout);
+        dataTimeout = setTimeout(() => {
+            console.log("پایان ارسال داده جدید.");
+        }, 5000); 
+    }
+
+    document.getElementById('report-form').addEventListener('submit', function(e) {
+        const periodSelect = document.getElementById('period_select').value;
+  
+        if (periodSelect === 'custom') {
+            if (currentLang === 'fa') {
+                let shamsiStart = document.getElementById('shamsi_start').value;
+                let shamsiEnd = document.getElementById('shamsi_end').value;
+                if (!shamsiStart || !shamsiEnd) {
+                    e.preventDefault();
+                    alert(currentLang === 'fa' ? 'لطفاً هر دو تاریخ شروع و پایان را انتخاب کنید.' : 'Please select both start and end dates.');
+                    return;
+                }
+                
+                try {
+                    document.getElementById('gregorian_start').value = convertShamsiToGregorian(shamsiStart);
+                    document.getElementById('gregorian_end').value = convertShamsiToGregorian(shamsiEnd);
+                } catch(err) {
+                    e.preventDefault();
+                    alert('فرمت تاریخ انتخابی نامعتبر است.');
+                }
             } else {
                 const gregStart = document.getElementById('greg_start_input').value;
                 const gregEnd = document.getElementById('greg_end_input').value;
-
                 if (!gregStart || !gregEnd) {
                     e.preventDefault();
                     alert('Please select both start and end dates.');
                     return;
                 }
-
                 document.getElementById('gregorian_start').value = gregStart;
                 document.getElementById('gregorian_end').value = gregEnd;
             }
@@ -319,7 +594,7 @@
         data: {
             labels: [], 
             datasets: [{
-                label: 'ضربان قلب (BPM)',
+                label: currentLang === 'fa' ? 'ضربان قلب (BPM)' : 'Heart Rate (BPM)',
                 data: [], 
                 borderColor: 'rgb(255, 99, 132)',
                 backgroundColor: 'rgba(255, 99, 132, 0.1)',
@@ -335,7 +610,7 @@
         data: {
             labels: [], 
             datasets: [{
-                label: 'سطح اکسیژن خون (SpO2 %)',
+                label: currentLang === 'fa' ? 'سطح اکسیژن خون (% SpO2)' : 'Blood Oxygen Level (SpO2 %)',
                 data: [], 
                 borderColor: 'rgb(54, 162, 235)',
                 backgroundColor: 'rgba(54, 162, 235, 0.1)',
@@ -352,16 +627,13 @@
                 if (data && data.length > 0) {
                     const latestRecord = data[0];
                     const currentId = latestRecord.id || latestRecord.timestamp;
-
                     if (currentId === lastProcessedId) return;
                     lastProcessedId = currentId;
-
+                    onNewDataReceived();
                     heartRateChart.data.labels.push(latestRecord.timestamp);
                     heartRateChart.data.datasets[0].data.push(latestRecord.heart_rate);
-
                     oxygenChart.data.labels.push(latestRecord.timestamp);
                     oxygenChart.data.datasets[0].data.push(latestRecord.oxygen_level);
-
                     if (heartRateChart.data.labels.length > 20) {
                         heartRateChart.data.labels.shift();
                         heartRateChart.data.datasets[0].data.shift();
@@ -370,15 +642,17 @@
                         oxygenChart.data.labels.shift();
                         oxygenChart.data.datasets[0].data.shift();
                     }
-
                     heartRateChart.update();
                     oxygenChart.update();
                 }
             });
     }
-
     updateCharts();
     setInterval(updateCharts, 2000);
+
+    function clearLocalStorageOnLogout() {
+    localStorage.removeItem('last_ai_analysis');
+}
     </script>
 </body>
 </html>
