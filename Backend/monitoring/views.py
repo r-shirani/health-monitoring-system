@@ -30,6 +30,7 @@ class VitalSignViewSet(viewsets.ModelViewSet):
     serializer_class = VitalSignSerializer
     permission_classes = [IsAuthenticated]
     authentication_classes = [SessionAuthentication, TokenAuthentication]
+    pagination_class = None
 
     def get_queryset(self):
         queryset = super().get_queryset()
