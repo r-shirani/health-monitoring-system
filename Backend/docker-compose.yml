@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: health_db
+    restart: always
+    environment:
+      POSTGRES_DB: health_db
+      POSTGRES_USER: health_user
+      POSTGRES_PASSWORD: health_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: health_redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+  web:
+    build: .
+    container_name: health_django
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_HOST=db
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+
+  celery:
+    build: .
+    container_name: health_celery
+    command: celery -A core worker --loglevel=info
+    volumes:
+      - .:/app
+    environment:
+      - DB_HOST=db
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  postgres_data:
