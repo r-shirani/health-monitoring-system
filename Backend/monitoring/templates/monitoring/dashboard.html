@@ -921,9 +921,10 @@
             scales: { x: commonXAxisOptions }
         }
     });
-
+    
+    const userDeviceId = "{{ devices.0.id }}";
     function updateCharts() {
-        fetch('/vitals/?device=1')
+        fetch(`/vitals/?device=${userDeviceId}`)
             .then(response => response.json())
             .then(data => {
                 if (data && data.length > 0) {
