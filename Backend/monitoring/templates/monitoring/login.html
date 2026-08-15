@@ -2,40 +2,232 @@
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title id="page-title">ورود به سیستم</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="page-title">ورود به سیستم مانیتورینگ</title>
+    
+    <!-- FontAwesome & Vazirmatn -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><path fill='%234f46e5' d='M0 190.9V185.1C0 115 57 58.1 127.1 58.1C163.7 58.1 196.7 73.8 220 98.8C243.3 73.8 276.3 58.1 312.9 58.1C383 58.1 440 115 440 185.1V190.9C440 238.2 416 281.8 379.2 311.2L246 433.8C231.4 447.2 208.6 447.2 194 433.8L60.8 311.2C24 281.8 0 238.2 0 190.9zM224 384L342.3 275.5C368.1 254.9 384 224.2 384 190.9V185.1C384 145.8 352.2 114.1 312.9 114.1C283.4 114.1 257.6 131.8 247.1 158.8C243.3 168.6 234.1 175 224 175C213.9 175 204.7 168.6 200.9 158.8C190.4 131.8 164.6 114.1 135.1 114.1C95.8 114.1 64 145.8 64 185.1V190.9C64 224.2 79.9 254.9 105.7 275.5L224 384z'/></svg>">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
-        body { font-family: Tahoma, sans-serif; background-color: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .login-card { background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 320px; position: relative; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input[type="text"], input[type="password"] { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        .btn { width: 100%; background: #007bff; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-size: 16px; margin-top: 10px; }
-        .btn:hover { background: #0056b3; }
-        .lang-switcher { display: flex; justify-content: flex-end; gap: 5px; margin-bottom: 15px; }
-        .btn-lang { background: #e0e0e0; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+        }
+
+        * {
+            box-sizing: border-box;
+            transition: all 0.2s ease-in-out;
+        }
+
+        body {
+            font-family: 'Vazirmatn', Tahoma, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: var(--bg-card);
+            padding: 36px 32px;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-lg);
+            width: 100%;
+            max-width: 380px;
+            position: relative;
+        }
+
+        /* language switcher with fixed position */
+        .lang-switcher-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+            direction: ltr !important; 
+        }
+
+        .lang-switcher-group {
+            display: inline-flex;
+            background: #e2e8f0;
+            padding: 4px;
+            border-radius: 10px;
+            gap: 2px;
+        }
+
+        .btn-lang {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 5px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-lang:hover {
+            color: var(--text-main);
+        }
+
+        .btn-lang.active {
+            background: #ffffff;
+            color: var(--primary);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+        }
+
+        /* header */
+        .header-box {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(79, 70, 229, 0.1);
+            color: var(--primary);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            margin-bottom: 12px;
+        }
+
+        h2.login-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin: 0;
+            color: var(--text-main);
+        }
+
+        /* form and inputs */
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        html[dir="rtl"] .input-wrapper i { right: 14px; }
+        html[dir="ltr"] .input-wrapper i { left: 14px; }
+
+        html[dir="rtl"] .input-wrapper input { padding-right: 38px; padding-left: 14px; }
+        html[dir="ltr"] .input-wrapper input { padding-left: 38px; padding-right: 14px; }
+
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            font-family: inherit;
+            font-size: 14px;
+            background-color: #f8fafc;
+            color: var(--text-main);
+            outline: none;
+        }
+
+        input[type="text"]:focus, input[type="password"]:focus {
+            border-color: var(--primary);
+            background-color: #ffffff;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 600;
+            margin-top: 10px;
+            box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+        }
     </style>
 </head>
 <body>
 
 <div class="login-card">
-    <div class="lang-switcher">
-        <button onclick="setLoginLang('fa')" class="btn-lang">FA 🇮🇷</button>
-        <button onclick="setLoginLang('en')" class="btn-lang">EN 🇬🇧</button>
+    <div class="lang-switcher-container">
+        <div class="lang-switcher-group">
+            <button onclick="setLoginLang('fa')" id="lang-btn-fa" class="btn-lang">FA</button>
+            <button onclick="setLoginLang('en')" id="lang-btn-en" class="btn-lang">ENG</button>
+        </div>
     </div>
 
-    <h2 id="login-title" style="text-align: center; margin-top: 0;">ورود به سیستم</h2>
+    <div class="header-box">
+        <div class="logo-icon">
+            <i class="fa-solid fa-heart-pulse"></i>
+        </div>
+        <h2 class="login-title" id="login-title">ورود به سیستم</h2>
+    </div>
     
     <form method="post">
         {% csrf_token %}
         <div class="form-group">
             <label id="label-user" for="username">نام کاربری:</label>
-            <input type="text" id="username" name="username" required>
+            <div class="input-wrapper">
+                <i class="fa-solid fa-user"></i>
+                <input type="text" id="username" name="username" required autocomplete="username">
+            </div>
         </div>
         <div class="form-group">
             <label id="label-pass" for="password">رمز عبور:</label>
-            <input type="password" id="password" name="password" required>
+            <div class="input-wrapper">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" id="password" name="password" required autocomplete="current-password">
+            </div>
         </div>
-        <button type="submit" class="btn" id="btn-login">ورود</button>
+        <button type="submit" class="btn" id="btn-login">
+            <i class="fa-solid fa-right-to-bracket"></i>
+            <span id="btn-text">ورود</span>
+        </button>
     </form>
 </div>
 
@@ -45,18 +237,21 @@ function setLoginLang(lang) {
     document.documentElement.dir = lang === 'fa' ? 'rtl' : 'ltr';
     document.documentElement.lang = lang;
 
+    document.getElementById('lang-btn-fa').classList.toggle('active', lang === 'fa');
+    document.getElementById('lang-btn-en').classList.toggle('active', lang === 'en');
+
     if (lang === 'en') {
         document.getElementById('page-title').innerText = 'System Login';
         document.getElementById('login-title').innerText = 'System Login';
         document.getElementById('label-user').innerText = 'Username:';
         document.getElementById('label-pass').innerText = 'Password:';
-        document.getElementById('btn-login').innerText = 'Login';
+        document.getElementById('btn-text').innerText = 'Login';
     } else {
-        document.getElementById('page-title').innerText = 'ورود به سیستم';
+        document.getElementById('page-title').innerText = 'ورود به سیستم مانیتورینگ';
         document.getElementById('login-title').innerText = 'ورود به سیستم';
         document.getElementById('label-user').innerText = 'نام کاربری:';
         document.getElementById('label-pass').innerText = 'رمز عبور:';
-        document.getElementById('btn-login').innerText = 'ورود';
+        document.getElementById('btn-text').innerText = 'ورود';
     }
 }
 
