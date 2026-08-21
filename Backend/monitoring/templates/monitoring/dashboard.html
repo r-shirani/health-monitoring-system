@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title id="page-title">داشبورد مانیتورینگ سلامت</title>
     
-    <!-- FontAwesome -->
+    <!-- FontAwesome & Fonts -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><path fill='%234f46e5' d='M0 190.9V185.1C0 115 57 58.1 127.1 58.1C163.7 58.1 196.7 73.8 220 98.8C243.3 73.8 276.3 58.1 312.9 58.1C383 58.1 440 115 440 185.1V190.9C440 238.2 416 281.8 379.2 311.2L246 433.8C231.4 447.2 208.6 447.2 194 433.8L60.8 311.2C24 281.8 0 238.2 0 190.9zM224 384L342.3 275.5C368.1 254.9 384 224.2 384 190.9V185.1C384 145.8 352.2 114.1 312.9 114.1C283.4 114.1 257.6 131.8 247.1 158.8C243.3 168.6 234.1 175 224 175C213.9 175 204.7 168.6 200.9 158.8C190.4 131.8 164.6 114.1 135.1 114.1C95.8 114.1 64 145.8 64 185.1V190.9C64 224.2 79.9 254.9 105.7 275.5L224 384z'/></svg>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- persian calendar style -->
+    <!-- Persian calendar style -->
     <link rel="stylesheet" href="https://unpkg.com/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css"/>
 
     <style>
@@ -54,20 +54,22 @@
             margin: 0 auto;
         }
 
-        /* language switcher with fix podition */
-        .lang-switcher-container {
+        /* Top Header Navigation Layout */
+        .top-header {
             display: flex;
-            justify-content: flex-end;
-            margin-bottom: 20px;
-            direction: ltr !important;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
         }
 
+        /* Language switcher */
         .lang-switcher-group {
             display: inline-flex;
             background: #e2e8f0;
             padding: 4px;
             border-radius: 10px;
             gap: 2px;
+            direction: ltr !important;
         }
 
         .btn-lang {
@@ -92,7 +94,105 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.08);
         }
 
-        /* titles */
+        /* User Profile Dropdown */
+        .user-dropdown-container {
+            position: relative;
+        }
+
+        .user-dropdown-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 8px 14px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
+            font-family: inherit;
+        }
+
+        .user-dropdown-btn:hover {
+            border-color: var(--primary);
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-main);
+        }
+
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 110%;
+            border-radius: var(--radius-md);
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-lg);
+            width: 240px;
+            z-index: 1000;
+            padding: 8px 0;
+        }
+
+        html[dir="rtl"] .dropdown-menu { left: 0; }
+        html[dir="ltr"] .dropdown-menu { right: 0; }
+
+        .dropdown-menu.show {
+            display: block;
+            animation: fadeIn 0.2s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            color: var(--text-main);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .dropdown-item:hover {
+            background: #f1f5f9;
+            color: var(--primary);
+        }
+
+        .dropdown-item i {
+            width: 16px;
+            text-align: center;
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background: var(--border-color);
+            margin: 6px 0;
+        }
+
+        .text-danger { color: var(--danger) !important; }
+        .text-danger:hover { background: #fef2f2 !important; }
+
+        /* Titles */
         h1.main-title {
             font-size: 24px;
             font-weight: 700;
@@ -103,7 +203,7 @@
             gap: 10px;
         }
 
-        /* cards */
+        /* Cards */
         .card {
             background: var(--bg-card);
             padding: 24px;
@@ -127,7 +227,7 @@
             gap: 8px;
         }
 
-        /* modern buttons */
+        /* Buttons */
         .btn {
             height: 42px;
             display: inline-flex;
@@ -151,6 +251,12 @@
             background-color: var(--primary-hover);
             transform: translateY(-1px);
         }
+
+        .btn-secondary {
+            background-color: #64748b;
+            box-shadow: 0 2px 4px rgba(100, 116, 139, 0.2);
+        }
+        .btn-secondary:hover { background-color: #475569; }
 
         .btn-success {
             background-color: var(--success);
@@ -176,8 +282,8 @@
         }
         .btn-danger:hover { background-color: var(--danger-hover); }
 
-        /* forms and inputs */
-        select, input[type="text"], input[type="date"] {
+        /* Forms & Inputs */
+        select, input[type="text"], input[type="password"], input[type="email"], input[type="date"] {
             height: 42px;
             padding: 0 14px;
             border: 1px solid var(--border-color);
@@ -188,9 +294,10 @@
             color: var(--text-main);
             outline: none;
             box-sizing: border-box;
+            width: 100%;
         }
 
-        select:focus, input[type="text"]:focus, input[type="date"]:focus {
+        select:focus, input[type="text"]:focus, input[type="password"]:focus, input[type="email"]:focus, input[type="date"]:focus {
             border-color: var(--primary);
             background-color: #ffffff;
             box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
@@ -200,7 +307,7 @@
             display: flex;
             flex-direction: column;
             gap: 6px;
-            margin-bottom: 0;
+            margin-bottom: 16px;
         }
 
         .form-group label {
@@ -216,7 +323,12 @@
             flex-wrap: wrap;
         }
 
-        /* devices box */
+        .form-inline .form-group {
+            margin-bottom: 0;
+            width: auto;
+        }
+
+        /* Devices box */
         .device-list {
             list-style: none;
             padding: 0;
@@ -243,7 +355,7 @@
         .badge-active { background: #d1fae5; color: #065f46; }
         .badge-inactive { background: #fee2e2; color: #991b1b; }
 
-        /* AI analysis box */
+        /* AI Analysis Box */
         #ai-result-container {
             display: none;
             margin-top: 20px;
@@ -253,7 +365,12 @@
             border-radius: var(--radius-md);
         }
 
-        /* dates box */
+        html[dir="ltr"] #ai-result-container {
+            border-right: none;
+            border-left: 4px solid var(--purple);
+        }
+
+        /* Dates Box */
         #shamsi-date-container, #gregorian-date-container, 
         #ai-shamsi-date-container, #ai-gregorian-date-container {
             display: none;
@@ -263,17 +380,145 @@
             margin-top: 12px;
             width: 100%;
         }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            animation: fadeIn 0.2s ease-in-out;
+        }
+
+        .modal-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 480px;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-close-btn {
+            background: transparent;
+            border: none;
+            font-size: 18px;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        .modal-close-btn:hover {
+            color: var(--danger);
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            background: #f8fafc;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* Alert Messages */
+        .messages {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 20px 0;
+        }
+        .alert {
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .alert-success { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+        .alert-error { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Switch Language -->
-        <div class="lang-switcher-container">
+        <!-- Top Navigation Bar -->
+        <div class="top-header">
+            <!-- User Profile Dropdown Component -->
+            <div class="user-dropdown-container">
+                <button class="user-dropdown-btn" onclick="toggleProfileMenu(event)">
+                    <span class="user-avatar">{{ request.user.username|slice:":2"|upper }}</span>
+                    <span class="user-name">{{ request.user.username }}</span>
+                    <i class="fa-solid fa-chevron-down" style="font-size: 12px;"></i>
+                </button>
+
+                <!-- Dropdown Menu Content -->
+                <div class="dropdown-menu" id="profileDropdown">
+                    <a href="javascript:void(0)" class="dropdown-item" onclick="openModal('editProfileModal')">
+                        <i class="fa-solid fa-user-pen" style="color: var(--purple);"></i>
+                        <span id="menu-edit-profile">ویرایش پروفایل</span>
+                    </a>
+                    <a href="javascript:void(0)" class="dropdown-item" onclick="openModal('changePasswordModal')">
+                        <i class="fa-solid fa-key" style="color: var(--info);"></i>
+                        <span id="menu-change-pass">تغییر رمز عبور</span>
+                    </a>
+                    <a href="javascript:void(0)" class="dropdown-item" onclick="openModal('emergencyContactModal')">
+                        <i class="fa-solid fa-shield-halved" style="color: var(--success);"></i>
+                        <span id="menu-emergency-email">ایمیل اضطراری</span>
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="javascript:void(0)" class="dropdown-item text-danger" onclick="document.getElementById('logout-form').submit();">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        <span id="menu-logout">خروج از حساب</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Switch Language -->
             <div class="lang-switcher-group">
                 <button onclick="changeLanguage('fa')" id="lang-btn-fa" class="btn-lang">FA</button>
                 <button onclick="changeLanguage('en')" id="lang-btn-en" class="btn-lang">ENG</button>
             </div>
         </div>
+
+        <!-- System Django Messages -->
+        {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}
+                    <li class="alert alert-{{ message.tags }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
 
         <h1 class="main-title" id="welcome-msg">
             <i class="fa-solid fa-wave-square" style="color: var(--primary);"></i>
@@ -471,14 +716,107 @@
             </div>
         </div>
 
-        <!-- Logout Form -->
-        <form action="{% url 'logout' %}" method="post" onsubmit="clearLocalStorageOnLogout()" style="margin-top: 30px; margin-bottom: 50px;">
+        <!-- Logout Hidden Form -->
+        <form id="logout-form" action="{% url 'logout' %}" method="post" onsubmit="clearLocalStorageOnLogout()" style="display: none;">
             {% csrf_token %}
-            <button type="submit" class="btn btn-danger" id="btn-logout">
-                <i class="fa-solid fa-right-from-bracket"></i>
-                <span id="btn-logout-text">خروج از حساب</span>
-            </button>
         </form>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODALS SECTION                             -->
+    <!-- ========================================== -->
+
+    <!-- 1. Edit Profile Modal -->
+    <div class="modal-overlay" id="editProfileModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="modal-edit-title"><i class="fa-solid fa-user-pen" style="color: var(--purple);"></i> ویرایش پروفایل</h3>
+                <button class="modal-close-btn" onclick="closeModal('editProfileModal')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form action="{% url 'update_profile' %}" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label id="lbl-edit-username">نام کاربری:</label>
+                        <input type="text" name="username" value="{{ request.user.username }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label id="lbl-edit-emergency-display">ایمیل اضطراری فعلی:</label>
+                        <input type="text" value="{{ request.user.emergency_email|default:'ثبت نشده' }}" disabled style="background-color: #e2e8f0; color: #64748b; cursor: not-allowed;">
+                    </div>
+                    <div class="form-group">
+                        <label id="lbl-edit-confirm-pass">رمز عبور فعلی (جهت تایید تغییرات):</label>
+                        <input type="password" name="old_password" required placeholder="********">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editProfileModal')" id="btn-cancel-edit">انصراف</button>
+                    <button type="submit" class="btn btn-purple" id="btn-save-edit"><i class="fa-solid fa-check"></i> ذخیره تغییرات</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. Change Password Modal -->
+    <div class="modal-overlay" id="changePasswordModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="modal-pass-title"><i class="fa-solid fa-key" style="color: var(--info);"></i> تغییر رمز عبور</h3>
+                <button class="modal-close-btn" onclick="closeModal('changePasswordModal')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form action="{% url 'update_profile' %}" method="post" onsubmit="return validatePassword(event)">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label id="lbl-old-pass">رمز عبور فعلی:</label>
+                        <input type="password" name="old_password" required placeholder="********">
+                    </div>
+                    <div class="form-group">
+                        <label id="lbl-new-pass">رمز عبور جدید:</label>
+                        <input type="password" id="new_password" name="new_password" required placeholder="********">
+                    </div>
+                    <div class="form-group">
+                        <label id="lbl-confirm-new-pass">تکرار رمز عبور جدید:</label>
+                        <input type="password" id="confirm_password" required placeholder="********" onkeyup="checkPasswordMatch()">
+                        <small id="password-error" style="display:none; color: var(--danger); font-size: 12px; margin-top: 4px; font-weight: 600;">رمزهای عبور یکسان نیستند!</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('changePasswordModal')" id="btn-cancel-pass">انصراف</button>
+                    <button type="submit" class="btn btn-info" id="btn-save-pass"><i class="fa-solid fa-check"></i> تغییر رمز عبور</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 3. Emergency Contact Email Modal -->
+    <div class="modal-overlay" id="emergencyContactModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="modal-emergency-title"><i class="fa-solid fa-shield-halved" style="color: var(--success);"></i> ایمیل اضطراری</h3>
+                <button class="modal-close-btn" onclick="closeModal('emergencyContactModal')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form action="{% url 'update_emergency_contact' %}" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    {% if request.user.profile.emergency_email %}
+                    <div style="background: #e0f2fe; color: #0369a1; padding: 12px; border-radius: 8px; border: 1px solid #bae6fd; font-size: 13px; margin-bottom: 16px;">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span id="txt-current-emergency">ایمیل ثبت‌شده فعلی:</span>
+                        <strong style="margin: 0 4px; direction: ltr; display: inline-block;">{{ request.user.profile.emergency_email }}</strong>
+                    </div>
+                    {% endif %}
+                    <div class="form-group">
+                        <label id="lbl-emergency-email">آدرس ایمیل اضطراری جدید (جهت ارسال هشدارها):</label>
+                        <input type="email" name="emergency_email" value="{{ request.user.emergency_email|default:'' }}" required placeholder="example@domain.com" style="direction: ltr;">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('emergencyContactModal')" id="btn-cancel-emergency">انصراف</button>
+                    <button type="submit" class="btn btn-success" id="btn-save-emergency"><i class="fa-solid fa-check"></i> ثبت ایمیل</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- JavaScript Libraries -->
@@ -490,6 +828,33 @@
     <script>
     let currentLang = localStorage.getItem('app_lang') || 'fa';
     let currentAnalysisObj = null;
+
+    /* Profile Dropdown & Modal Logic */
+    function toggleProfileMenu(e) {
+        e.stopPropagation();
+        document.getElementById('profileDropdown').classList.toggle('show');
+    }
+
+    function openModal(modalId) {
+        document.getElementById(modalId).classList.add('active');
+        document.getElementById('profileDropdown').classList.remove('show');
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
+    }
+
+    window.onclick = function(e) {
+        if (!e.target.matches('.user-dropdown-btn') && !e.target.closest('.user-dropdown-btn')) {
+            const dropdown = document.getElementById('profileDropdown');
+            if (dropdown && dropdown.classList.contains('show')) {
+                dropdown.classList.remove('show');
+            }
+        }
+        if (e.target.classList.contains('modal-overlay')) {
+            e.target.classList.remove('active');
+        }
+    }
 
     function clearLocalStorageOnLogout() {
         localStorage.removeItem('last_ai_analysis');
@@ -530,6 +895,31 @@
         } catch (e) {
             return isoString;
         }
+    }
+
+    function checkPasswordMatch() {
+        const newPass = document.getElementById('new_password').value;
+        const confirmPass = document.getElementById('confirm_password').value;
+        const errorText = document.getElementById('password-error');
+        
+        if (confirmPass.length > 0 && newPass !== confirmPass) {
+            errorText.style.display = 'block';
+        } else {
+            errorText.style.display = 'none';
+        }
+    }
+
+    function validatePassword(e) {
+        const newPass = document.getElementById('new_password').value;
+        const confirmPass = document.getElementById('confirm_password').value;
+        const errorText = document.getElementById('password-error');
+        
+        if (newPass !== confirmPass) {
+            e.preventDefault();
+            errorText.style.display = 'block';
+            return false;
+        }
+        return true;
     }
 
     $(document).ready(function() {
@@ -591,6 +981,7 @@
     function applyLanguage(lang) {
         currentLang = lang;
         localStorage.setItem('app_lang', lang);
+        document.cookie = "app_lang=" + lang + "; path=/; max-age=31536000";
         
         document.documentElement.dir = lang === 'fa' ? 'rtl' : 'ltr';
         document.documentElement.lang = lang;
@@ -601,7 +992,35 @@
         if (lang === 'en') {
             document.getElementById('page-title').innerText = 'Health Monitoring Dashboard';
             document.getElementById('welcome-msg').innerHTML = '<i class="fa-solid fa-wave-square" style="color: var(--primary);"></i> Welcome, {{ request.user.username }}';
-            document.getElementById('devices-title').innerHTML = '<i class="fa-solid fa-microchip"></i> Your Devices:';
+            
+            // Profile Menu
+            document.getElementById('menu-edit-profile').innerText = 'Edit Profile';
+            document.getElementById('menu-change-pass').innerText = 'Change Password';
+            document.getElementById('menu-emergency-email').innerText = 'Emergency Email';
+            document.getElementById('menu-logout').innerText = 'Sign Out';
+
+            // Edit Profile Modal
+            document.getElementById('modal-edit-title').innerHTML = '<i class="fa-solid fa-user-pen" style="color: var(--purple);"></i> Edit Profile';
+            document.getElementById('lbl-edit-username').innerText = 'New Username:';
+            document.getElementById('lbl-edit-confirm-pass').innerText = 'Current Password (to confirm):';
+            document.getElementById('btn-cancel-edit').innerText = 'Cancel';
+            document.getElementById('btn-save-edit').innerHTML = '<i class="fa-solid fa-check"></i> Save Changes';
+
+            // Change Pass Modal
+            document.getElementById('modal-pass-title').innerHTML = '<i class="fa-solid fa-key" style="color: var(--info);"></i> Change Password';
+            document.getElementById('lbl-old-pass').innerText = 'Current Password:';
+            document.getElementById('lbl-new-pass').innerText = 'New Password:';
+            document.getElementById('btn-cancel-pass').innerText = 'Cancel';
+            document.getElementById('btn-save-pass').innerHTML = '<i class="fa-solid fa-check"></i> Update Password';
+
+            // Emergency Email Modal
+            document.getElementById('modal-emergency-title').innerHTML = '<i class="fa-solid fa-shield-halved" style="color: var(--success);"></i> Emergency Contact';
+            document.getElementById('lbl-emergency-email').innerText = 'Emergency Email Address:';
+            document.getElementById('btn-cancel-emergency').innerText = 'Cancel';
+            document.getElementById('btn-save-emergency').innerHTML = '<i class="fa-solid fa-check"></i> Save Email';
+
+            // Dashboard Titles & Controls
+            document.getElementById('devices-title').innerHTML = '<i class="fa-solid fa-microchip"></i> Your Devices';
             document.getElementById('pdf-title').innerHTML = '<i class="fa-solid fa-file-pdf"></i> Download Health PDF Report';
             document.getElementById('label-device').innerText = 'Select Device:';
             document.getElementById('label-period').innerText = 'Report Period:';
@@ -626,8 +1045,18 @@
 
             document.getElementById('heart-chart-title').innerHTML = '<i class="fa-solid fa-heart-pulse"></i> Real-time Heart Rate Monitoring';
             document.getElementById('oxygen-chart-title').innerHTML = '<i class="fa-solid fa-lungs"></i> Real-time Blood Oxygen Level Monitoring';
+            document.getElementById('lbl-edit-username').innerText = 'Username:';
+            document.getElementById('lbl-edit-emergency-display').innerText = 'Current Emergency Email:';
 
-            document.getElementById('btn-logout-text').innerText = 'Logout';
+            document.getElementById('lbl-confirm-new-pass').innerText = 'Confirm New Password:';
+            document.getElementById('password-error').innerText = 'Passwords do not match!';
+            if(document.getElementById('txt-current-emergency')) {
+                document.getElementById('txt-current-emergency').innerText = 'Currently Registered Email:';
+            }
+            document.getElementById('lbl-emergency-email').innerText = 'New Emergency Email Address:';
+
+            const emDisplay = document.querySelector('input[disabled]');
+            if(emDisplay && emDisplay.value === 'ثبت نشده') emDisplay.value = 'Not Registered';
 
             document.querySelectorAll('.txt-device').forEach(el => el.innerText = 'Device');
             document.querySelectorAll('.txt-code').forEach(el => el.innerText = 'Code:');
@@ -645,7 +1074,45 @@
         } else {
             document.getElementById('page-title').innerText = 'داشبورد مانیتورینگ سلامت';
             document.getElementById('welcome-msg').innerHTML = '<i class="fa-solid fa-wave-square" style="color: var(--primary);"></i> خوش آمدید، {{ request.user.username }}';
-            document.getElementById('devices-title').innerHTML = '<i class="fa-solid fa-microchip"></i> دستگاه‌های شما:';
+            
+            // Profile Menu
+            document.getElementById('menu-edit-profile').innerText = 'ویرایش پروفایل';
+            document.getElementById('menu-change-pass').innerText = 'تغییر رمز عبور';
+            document.getElementById('menu-emergency-email').innerText = 'ایمیل اضطراری';
+            document.getElementById('menu-logout').innerText = 'خروج از حساب';
+
+            // Edit Profile Modal
+            document.getElementById('modal-edit-title').innerHTML = '<i class="fa-solid fa-user-pen" style="color: var(--purple);"></i> ویرایش پروفایل';
+            document.getElementById('lbl-edit-username').innerText = 'نام کاربری جدید:';
+            document.getElementById('lbl-edit-confirm-pass').innerText = 'رمز عبور فعلی (جهت تایید تغییرات):';
+            document.getElementById('btn-cancel-edit').innerText = 'انصراف';
+            document.getElementById('btn-save-edit').innerHTML = '<i class="fa-solid fa-check"></i> ذخیره تغییرات';
+            document.getElementById('lbl-edit-username').innerText = 'نام کاربری:';
+            document.getElementById('lbl-edit-emergency-display').innerText = 'ایمیل اضطراری فعلی:';
+
+            // Change Pass Modal
+            document.getElementById('modal-pass-title').innerHTML = '<i class="fa-solid fa-key" style="color: var(--info);"></i> تغییر رمز عبور';
+            document.getElementById('lbl-old-pass').innerText = 'رمز عبور فعلی:';
+            document.getElementById('lbl-new-pass').innerText = 'رمز عبور جدید:';
+            document.getElementById('btn-cancel-pass').innerText = 'انصراف';
+            document.getElementById('btn-save-pass').innerHTML = '<i class="fa-solid fa-check"></i> تغییر رمز عبور';
+            document.getElementById('lbl-confirm-new-pass').innerText = 'تکرار رمز عبور جدید:';
+            document.getElementById('password-error').innerText = 'رمزهای عبور یکسان نیستند!';
+
+            // Emergency Email Modal
+            document.getElementById('modal-emergency-title').innerHTML = '<i class="fa-solid fa-shield-halved" style="color: var(--success);"></i> ایمیل اضطراری';
+            document.getElementById('lbl-emergency-email').innerText = 'آدرس ایمیل اضطراری (جهت ارسال هشدارها):';
+            document.getElementById('btn-cancel-emergency').innerText = 'انصراف';
+            document.getElementById('btn-save-emergency').innerHTML = '<i class="fa-solid fa-check"></i> ثبت ایمیل';
+            if(document.getElementById('txt-current-emergency')) {
+                document.getElementById('txt-current-emergency').innerText = 'ایمیل ثبت‌شده فعلی:';
+            }
+            document.getElementById('lbl-emergency-email').innerText = 'آدرس ایمیل اضطراری جدید (جهت ارسال هشدارها):';
+            const emDisplay = document.querySelector('input[disabled]');
+            if(emDisplay && emDisplay.value === 'Not Registered') emDisplay.value = 'ثبت نشده';
+
+            // Dashboard Titles & Controls
+            document.getElementById('devices-title').innerHTML = '<i class="fa-solid fa-microchip"></i> دستگاه‌های شما';
             document.getElementById('pdf-title').innerHTML = '<i class="fa-solid fa-file-pdf"></i> دریافت گزارش PDF سلامت';
             document.getElementById('label-device').innerText = 'انتخاب دستگاه:';
             document.getElementById('label-period').innerText = 'بازه زمانی گزارش:';
@@ -671,7 +1138,6 @@
             document.getElementById('heart-chart-title').innerHTML = '<i class="fa-solid fa-heart-pulse"></i> مانیتورینگ آنلاین ضربان قلب';
             document.getElementById('oxygen-chart-title').innerHTML = '<i class="fa-solid fa-lungs"></i> مانیتورینگ آنلاین سطح اکسیژن خون';
 
-            document.getElementById('btn-logout-text').innerText = 'خروج از حساب';
             document.querySelectorAll('.txt-device').forEach(el => el.innerText = 'دستگاه');
             document.querySelectorAll('.txt-code').forEach(el => el.innerText = 'کد:');
             document.querySelectorAll('.txt-status').forEach(el => el.innerText = 'وضعیت:');
@@ -924,6 +1390,7 @@
     
     const userDeviceId = "{{ devices.0.id }}";
     function updateCharts() {
+        if (!userDeviceId) return;
         fetch(`/vitals/?device=${userDeviceId}`)
             .then(response => response.json())
             .then(data => {
