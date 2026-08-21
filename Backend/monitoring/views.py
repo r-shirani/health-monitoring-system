@@ -13,6 +13,10 @@ from django.db.models import Avg, Max, Min
 from .reports import generate_vital_signs_pdf
 from django.http import JsonResponse
 from .ai_service import analyze_vitals_with_ai
+from django.shortcuts import redirect
+from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.models import User
 
 class DeviceViewSet(viewsets.ModelViewSet):
     serializer_class = DeviceSerializer
@@ -178,7 +182,6 @@ def analyze_range_ai(request):
     analysis_dict = analyze_vitals_with_ai(vitals_csv_text, is_session=False)
     return JsonResponse({'status': 'success', 'analysis': analysis_dict})
 
-
 @login_required
 def analyze_last_session_ai(request):
     device_id = request.GET.get('device')
@@ -197,3 +200,60 @@ def analyze_last_session_ai(request):
 
     analysis_dict = analyze_vitals_with_ai(vitals_csv_text, is_session=True)
     return JsonResponse({'status': 'success', 'analysis': analysis_dict})
+
+@login_required
+def update_profile(request):
+    if request.method == 'POST':
+        new_username = request.POST.get('username')
+        old_password = request.POST.get('old_password')
+        new_password = request.POST.get('new_password')
+        user = request.user
+
+        lang = request.COOKIES.get('app_lang', 'fa')
+        
+        # check the currunt password
+        if not user.check_password(old_password):
+            msg = "رمز عبور فعلی اشتباه است." if lang == 'fa' else "Current password is incorrect."
+            messages.error(request, msg)
+            return redirect('dashboard')
+            
+        # check the username
+        if new_username and new_username != user.username:
+            if User.objects.filter(username=new_username).exists():
+                msg = "نام کاربری قبلا انتخاب شده است." if lang == 'fa' else "Username is already taken."
+                messages.error(request, msg)
+                return redirect('dashboard')
+            user.username = new_username
+            
+        # check the new password
+        if new_password:
+            user.set_password(new_password)
+            user.save()
+            update_session_auth_hash(request, user)
+            msg = "رمز عبور با موفقیت تغییر یافت." if lang == 'fa' else "Password changed successfully."
+            messages.success(request, msg)
+        else:
+            user.save()
+            msg = "تغییرات با موفقیت ثبت شد." if lang == 'fa' else "User profile updated successfully."
+            messages.success(request, msg)
+            
+    return redirect('dashboard')
+
+@login_required
+def update_emergency_contact(request):
+    if request.method == 'POST':
+        emergency_email = request.POST.get('emergency_email')
+        lang = request.COOKIES.get('app_lang', 'fa')
+        
+        if emergency_email:
+            profile = request.user
+            profile.emergency_email = emergency_email
+            profile.save()
+            msg = "ایمیل اضطراری با موفقیت ثبت شد." if lang == 'fa' else "Emergency email registered successfully."
+            messages.success(request, msg)
+        else:
+            msg = "لطفا یک ایمیل معتبر وارد کنید." if lang == 'fa' else "Please enter a valid email address."
+            messages.success(request, msg)
+        return redirect(request.META.get('HTTP_REFERER', 'dashboard'))
+            
+    return redirect('dashboard')

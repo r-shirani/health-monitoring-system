@@ -18,4 +18,6 @@ urlpatterns = [
     path('dashboard/report/', generate_report_pdf, name='generate_report_pdf'),
     path('api/analyze-ai-range/', views.analyze_range_ai, name='analyze_ai_range'),
     path('api/analyze-ai-session/', views.analyze_last_session_ai, name='analyze_ai_session'),
+    path('update-profile/', views.update_profile, name='update_profile'),
+    path('update-emergency/', views.update_emergency_contact, name='update_emergency_contact'),
 ]
