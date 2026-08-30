@@ -1,0 +1,27 @@
+# Django Framework & Core
+Django>=5.0,<6.0
+djangorestframework>=3.14.0
+python-dotenv>=1.0.0
+
+# Database (PostgreSQL)
+psycopg2-binary>=2.9.9
+
+# Async Tasks & Caching (Celery & Redis)
+celery>=5.3.6
+redis>=5.0.1
+
+# AI Integration (Together AI / Requests)
+together>=1.0.0
+requests[socks]>=2.31.0
+
+# SOCKS Proxy Support
+PySocks>=1.7.1
+socksio>=1.0.0
+httpcore[socks]>=1.0.0
+
+# PDF Generation & Reporting
+reportlab>=4.1.0
+xhtml2pdf>=0.2.11
+
+# Utility & Security
+certifi>=2024.2.2
