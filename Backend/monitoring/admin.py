@@ -21,7 +21,6 @@ from .models import Device, VitalSign
 
 @admin.register(Device)
 class DeviceAdmin(admin.ModelAdmin):
-  # افزودن id عددی دیتابیس در کنار سایر فیلدها
   list_display = (
       'id',
       'device_id',
@@ -34,7 +33,6 @@ class DeviceAdmin(admin.ModelAdmin):
   search_fields = ('device_id', 'user__username', 'name')
   list_filter = ('is_active', 'created_at')
 
-  # متد نمایش آیدی عددی کاربر متصل به دستگاه
   @admin.display(description='User ID')
   def get_user_id(self, obj):
     return obj.user.id if obj.user else '-'

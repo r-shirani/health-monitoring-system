@@ -64,7 +64,7 @@ class VitalSignViewSet(viewsets.ModelViewSet):
                     
                     send_async_critical_alert.delay(
                         email_target=emergency_email,
-                        device_name=device.name,
+                        device_name=device.name or device.device_id,
                         heart_rate=heart_rate,
                         oxygen_level=oxygen_level,
                         timestamp=vital_sign.timestamp.strftime('%Y-%m-%d %H:%M:%S')
@@ -73,8 +73,8 @@ class VitalSignViewSet(viewsets.ModelViewSet):
     
 @login_required
 def dashboard(request):
-    user_devices = Device.objects.filter(user=request.user)
-    return render(request, 'monitoring/dashboard.html', {'devices' : user_devices})
+    user_device = Device.objects.filter(user=request.user).first()
+    return render(request, 'monitoring/dashboard.html', {'device': user_device})
 
 @login_required
 def generate_report_pdf(request):
@@ -156,7 +156,11 @@ def analyze_range_ai(request):
     elif date_range == 'month':
         start_filter = now - timedelta(days=30)
 
-    device = Device.objects.filter(id=device_id_req, user=request.user).first() if device_id_req else Device.objects.filter(user=request.user).first()
+    if device_id_req:
+        device = Device.objects.filter(id=device_id_req, user=request.user).first()
+    else:
+        device = Device.objects.filter(user=request.user).first()
+
     if not device:
         return JsonResponse({'status': 'no_device', 'analysis': None}, status=404)
 
@@ -186,10 +190,15 @@ def analyze_range_ai(request):
 def analyze_last_session_ai(request):
     device_id = request.GET.get('device')
 
-    if not device_id:
+    if device_id:
+        device = Device.objects.filter(id=device_id, user=request.user).first()
+    else:
+        device = Device.objects.filter(user=request.user).first()
+
+    if not device:
         return JsonResponse({'status': 'no_device_selected', 'analysis': None}, status=400)
 
-    vitals = VitalSign.objects.filter(device_id=device_id).order_by('-timestamp')[:20]
+    vitals = VitalSign.objects.filter(device=device).order_by('-timestamp')[:20]
     if not vitals.exists():
         return JsonResponse({'status': 'empty', 'analysis': None})
 
@@ -244,16 +253,23 @@ def update_emergency_contact(request):
     if request.method == 'POST':
         emergency_email = request.POST.get('emergency_email')
         lang = request.COOKIES.get('app_lang', 'fa')
-        
-        if emergency_email:
-            profile = request.user
-            profile.emergency_email = emergency_email
-            profile.save()
+        device_id = request.POST.get('device_id')
+
+        device = None
+        if device_id and device_id.isdigit():
+            device = Device.objects.filter(id=int(device_id), user=request.user).first()
+
+        if not device:
+            device = Device.objects.filter(user=request.user).first()
+
+        if device and emergency_email:
+            device.emergency_email = emergency_email
+            device.save()
             msg = "ایمیل اضطراری با موفقیت ثبت شد." if lang == 'fa' else "Emergency email registered successfully."
             messages.success(request, msg)
         else:
             msg = "لطفا یک ایمیل معتبر وارد کنید." if lang == 'fa' else "Please enter a valid email address."
-            messages.success(request, msg)
+            messages.error(request, msg)
         return redirect(request.META.get('HTTP_REFERER', 'dashboard'))
             
     return redirect('dashboard')

@@ -360,14 +360,9 @@
             display: none;
             margin-top: 20px;
             background: #f5f3ff;
-            border-right: 4px solid var(--purple);
+            border-inline-start: 4px solid var(--purple);
             padding: 20px;
             border-radius: var(--radius-md);
-        }
-
-        html[dir="ltr"] #ai-result-container {
-            border-right: none;
-            border-left: 4px solid var(--purple);
         }
 
         /* Dates Box */
@@ -526,13 +521,13 @@
         </h1>
       
         <!-- Devices Card -->
-        <div class="card">
+        <div class="card" style="border-inline-start: 4px solid var(--primary);">
             <h2 class="card-header-title" id="devices-title">
-                <i class="fa-solid fa-microchip" style="color: var(--text-muted);"></i>
-                دستگاه‌های شما
+                <i class="fa-solid fa-microchip" style="color: var(--primary);"></i>
+                دستگاه شما
             </h2>
             <ul class="device-list">
-                {% for device in devices %}
+                {% if device %}
                     <li class="device-item">
                         <div>
                             <span class="txt-device" style="font-weight: 500;">دستگاه</span> 
@@ -547,14 +542,14 @@
                             {% endif %}
                         </div>
                     </li>
-                {% empty %}
+                {% else %}
                     <li id="no-device-text" style="color: var(--text-muted);">شما هنوز هیچ دستگاهی ثبت نکرده‌اید.</li>
-                {% endfor %}
+                {% endif %}
             </ul>
         </div>
 
         <!-- PDF Report Card -->
-        <div class="card" style="border-right: 4px solid var(--success);">
+        <div class="card" style="border-inline-start: 4px solid var(--success);">
             <h2 class="card-header-title" id="pdf-title" style="color: #065f46;">
                 <i class="fa-solid fa-file-pdf"></i>
                 دریافت گزارش PDF سلامت
@@ -563,10 +558,10 @@
                 <div class="form-inline">
                     <div class="form-group">
                         <label for="report_device" id="label-device">انتخاب دستگاه:</label>
-                        <select name="device" id="report_device" required>
-                            {% for device in devices %}
-                                <option value="{{ device.id }}">{{ device.name }} (کد: {{ device.device_id }})</option>
-                            {% endfor %}
+                        <select name="device" id="report_device" class="form-control" required>
+                            {% if device %}
+                                <option value="{{ device.id }}" selected>{{ device.name }} ({{ device.device_id }})</option>
+                            {% endif %}
                         </select>
                     </div>
                     <div class="form-group">
@@ -620,7 +615,7 @@
         </div>
 
         <!-- AI Insights Card -->
-        <div class="card" style="border-right: 4px solid var(--purple);">
+        <div class="card" style="border-inline-start: 4px solid var(--purple);">
             <h2 class="card-header-title" id="ai-title" style="color: #5b21b6;">
                 <i class="fa-solid fa-brain"></i>
                 تحلیل هوشمند سلامت (AI Health Insights)
@@ -631,10 +626,10 @@
             <div class="form-inline">
                 <div class="form-group">
                     <label for="ai_device" id="label-ai-device">انتخاب دستگاه:</label>
-                    <select id="ai_device" required>
-                        {% for device in devices %}
-                            <option value="{{ device.id }}">{{ device.name }} (کد: {{ device.device_id }})</option>
-                        {% endfor %}
+                    <select name="device" id="ai_device" class="form-control" required>
+                            {% if device %}
+                                <option value="{{ device.id }}" selected>{{ device.name }} ({{ device.device_id }})</option>
+                            {% endif %}
                     </select>
                 </div>
                 <div class="form-group">
@@ -684,6 +679,22 @@
                 </div>
             </div>
 
+            <script>
+                document.addEventListener("DOMContentLoaded", function () {
+                    localStorage.removeItem("ai_analysis_result");
+                    sessionStorage.removeItem("ai_analysis_result");
+
+                    const aiText = document.getElementById("ai-text");
+                    if (aiText) {
+                        aiText.innerText = "";
+                    }
+                    const resultContainer = document.getElementById("ai-result-container");
+                    if (resultContainer) {
+                        resultContainer.style.display = "none";
+                    }
+                });
+            </script>
+
             <!-- Result Box -->
             <div id="ai-result-container">
                 <h4 style="margin-top: 0; color: var(--purple); font-size: 16px;" id="ai-result-title">نتیجه تحلیل:</h4>
@@ -695,7 +706,7 @@
         </div>
 
         <!-- Heart Rate Chart Card -->
-        <div class="card" style="border-right: 4px solid var(--danger);">
+        <div class="card" style="border-inline-start: 4px solid var(--danger);">
             <h2 class="card-header-title" id="heart-chart-title" style="color: #dc2626;">
                 <i class="fa-solid fa-heart-pulse"></i>
                 مانیتورینگ آنلاین ضربان قلب
@@ -706,7 +717,7 @@
         </div>
 
         <!-- Oxygen Chart Card -->
-        <div class="card" style="border-right: 4px solid var(--info);">
+        <div class="card" style="border-inline-start: 4px solid var(--info);">
             <h2 class="card-header-title" id="oxygen-chart-title" style="color: #0891b2;">
                 <i class="fa-solid fa-lungs"></i>
                 مانیتورینگ آنلاین سطح اکسیژن خون
@@ -742,7 +753,7 @@
                     </div>
                     <div class="form-group">
                         <label id="lbl-edit-emergency-display">ایمیل اضطراری فعلی:</label>
-                        <input type="text" value="{{ request.user.emergency_email|default:'ثبت نشده' }}" disabled style="background-color: #e2e8f0; color: #64748b; cursor: not-allowed;">
+                        <input type="text" value="{{ device.emergency_email|default:'ثبت نشده' }}" disabled style="background-color: #e2e8f0; color: #64748b; cursor: not-allowed;">
                     </div>
                     <div class="form-group">
                         <label id="lbl-edit-confirm-pass">رمز عبور فعلی (جهت تایید تغییرات):</label>
@@ -798,17 +809,19 @@
             </div>
             <form action="{% url 'update_emergency_contact' %}" method="post">
                 {% csrf_token %}
+                <input type="hidden" name="device_id" value="{{ device.id }}">
+
                 <div class="modal-body">
-                    {% if request.user.profile.emergency_email %}
+                    {% if device.emergency_email %}
                     <div style="background: #e0f2fe; color: #0369a1; padding: 12px; border-radius: 8px; border: 1px solid #bae6fd; font-size: 13px; margin-bottom: 16px;">
                         <i class="fa-solid fa-circle-info"></i>
                         <span id="txt-current-emergency">ایمیل ثبت‌شده فعلی:</span>
-                        <strong style="margin: 0 4px; direction: ltr; display: inline-block;">{{ request.user.profile.emergency_email }}</strong>
+                        <strong style="margin: 0 4px; direction: ltr; display: inline-block;">{{ device.emergency_email }}</strong>
                     </div>
                     {% endif %}
                     <div class="form-group">
                         <label id="lbl-emergency-email">آدرس ایمیل اضطراری جدید (جهت ارسال هشدارها):</label>
-                        <input type="email" name="emergency_email" value="{{ request.user.emergency_email|default:'' }}" required placeholder="example@domain.com" style="direction: ltr;">
+                        <input type="email" name="emergency_email" value="{{ device.emergency_email|default:'' }}" required placeholder="example@domain.com" style="direction: ltr;">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -931,16 +944,16 @@
 
         applyLanguage(currentLang);
 
-        const savedAnalysis = localStorage.getItem('last_ai_analysis');
-        if (savedAnalysis) {
-            try {
-                currentAnalysisObj = JSON.parse(savedAnalysis);
-                document.getElementById('ai-result-container').style.display = 'block';
-                displayAnalysisByLang();
-            } catch (e) {
-                console.error("Error parsing saved analysis", e);
-            }
-        }
+        // const savedAnalysis = localStorage.getItem('last_ai_analysis');
+        // if (savedAnalysis) {
+        //     try {
+        //         currentAnalysisObj = JSON.parse(savedAnalysis);
+        //         document.getElementById('ai-result-container').style.display = 'block';
+        //         displayAnalysisByLang();
+        //     } catch (e) {
+        //         console.error("Error parsing saved analysis", e);
+        //     }
+        // }
     });
 
     function toggleAiCustomDate() {
@@ -1020,7 +1033,7 @@
             document.getElementById('btn-save-emergency').innerHTML = '<i class="fa-solid fa-check"></i> Save Email';
 
             // Dashboard Titles & Controls
-            document.getElementById('devices-title').innerHTML = '<i class="fa-solid fa-microchip"></i> Your Devices';
+            document.getElementById('devices-title').innerHTML = '<i class="fa-solid fa-microchip" style="color: var(--primary);"></i> Your Devices';
             document.getElementById('pdf-title').innerHTML = '<i class="fa-solid fa-file-pdf"></i> Download Health PDF Report';
             document.getElementById('label-device').innerText = 'Select Device:';
             document.getElementById('label-period').innerText = 'Report Period:';
@@ -1112,7 +1125,7 @@
             if(emDisplay && emDisplay.value === 'Not Registered') emDisplay.value = 'ثبت نشده';
 
             // Dashboard Titles & Controls
-            document.getElementById('devices-title').innerHTML = '<i class="fa-solid fa-microchip"></i> دستگاه‌های شما';
+            document.getElementById('devices-title').innerHTML = '<i class="fa-solid fa-microchip" style="color: var(--primary);"></i> دستگاه‌های شما';
             document.getElementById('pdf-title').innerHTML = '<i class="fa-solid fa-file-pdf"></i> دریافت گزارش PDF سلامت';
             document.getElementById('label-device').innerText = 'انتخاب دستگاه:';
             document.getElementById('label-period').innerText = 'بازه زمانی گزارش:';
@@ -1241,7 +1254,7 @@
                 }
 
                 currentAnalysisObj = data.analysis;
-                localStorage.setItem('last_ai_analysis', JSON.stringify(currentAnalysisObj));
+                //localStorage.setItem('last_ai_analysis', JSON.stringify(currentAnalysisObj));
                 displayAnalysisByLang();
             })
             .catch(() => {
@@ -1282,7 +1295,7 @@
                 }
 
                 currentAnalysisObj = data.analysis;
-                localStorage.setItem('last_ai_analysis', JSON.stringify(currentAnalysisObj));
+                //localStorage.setItem('last_ai_analysis', JSON.stringify(currentAnalysisObj));
                 displayAnalysisByLang();
             })
             .catch(() => {
@@ -1388,7 +1401,7 @@
         }
     });
     
-    const userDeviceId = "{{ devices.0.id }}";
+    const userDeviceId = "{% if device %}{{ device.id }}{% else %}{% endif %}";
     function updateCharts() {
         if (!userDeviceId) return;
         fetch(`/vitals/?device=${userDeviceId}`)
