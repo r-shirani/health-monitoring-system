@@ -9,20 +9,20 @@
 #include "MAX30105.h"
 #include "heartRate.h"
 
-// OLED configuration
+// OLED Display Configuration
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
-// MAX30102 sensor
+// MAX30102 Sensor Object
 MAX30105 particleSensor;
 
-// Endpoint and header
-const char* serverUrl = "http://192.168.1.100:8000/vitals/"; 
+// Local Network Server Endpoint Settings
+const char* serverUrl = "http://192.168.1.104:8000/vitals/";
 const char* userToken = "46e3c4ffa08e942f0e6853452aeb5c026ae56397";
 const int deviceId = 22;
 
-// Captive portal and WiFi configuration
+// Captive Portal and WiFi Settings
 const byte DNS_PORT = 53;
 IPAddress apIP(192, 168, 4, 1);
 DNSServer dnsServer;
@@ -32,20 +32,23 @@ Preferences preferences;
 String saved_ssid = "";
 String saved_pass = "";
 
-// Variables for Heart Rate and SpO2
-byte rates[4];
-byte rateSpot = 0;
-long lastBeat = 0;
-float beatsPerMinute = 0;
-int beatAvg = 0;
-int spo2Val = 0;
+// Variables for Bio-Telemetry Processing (Corrected Array Size)
+byte rates[4];              // Circular buffer to store the last 4 valid heart rate readings
+byte rateSpot = 0;          // Index pointer for the circular rates array
+byte rateCount = 0;         // Tracks actual filled samples to prevent low average starts
+long lastBeat = 0;          // Timestamp (in ms) of the last detected heart beat
+float beatsPerMinute = 0;   // Calculated raw BPM
+int beatAvg = 0;            // Stable rolling average of the heart rate
+int spo2Val = 0;            // Extracted blood oxygen saturation level (SpO2)
 
 long irValue = 0;
 long redValue = 0;
 
 unsigned long lastSendTime = 0;
-const unsigned long sendInterval = 2000;
+const unsigned long sendInterval = 2000; // API telemetry send interval (2 seconds)
+unsigned long lastDisplayTime = 0;
 
+// Embedded HTML page for Captive Portal configuration
 const char index_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
@@ -98,186 +101,197 @@ const char index_html[] PROGMEM = R"rawliteral(
 </html>
 )rawliteral";
 
-void handleRoot() { server.send(200, "text/html", index_html); }
+void handleRoot() { 
+  server.send(200, "text/html", index_html); 
+}
 
-void handleSave() {
-  if (server.hasArg("ssid") && server.hasArg("password")) {
-    preferences.begin("wifi-config", false);
-    preferences.putString("ssid", server.arg("ssid"));
-    preferences.putString("password", server.arg("password"));
+void handleSave() { 
+  if (server.hasArg("ssid") && server.hasArg("password")) { 
+    preferences.begin("wifi-config", false); 
+    preferences.putString("ssid", server.arg("ssid")); 
+    preferences.putString("password", server.arg("password")); 
     preferences.end();
-
-    String lang = server.hasArg("lang") ? server.arg("lang") : "fa";
-    String msgTitle = (lang == "en") ? "Settings Saved!" : "اطلاعات ذخیره شد!";
-    String msgBody = (lang == "en") ? "Rebooting device, please wait..." : "در حال راه‌اندازی مجدد دستگاه...";
-
-    String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1'>"
-                  "<style>body{font-family:Tahoma,sans-serif;text-align:center;background:#f4f4f9;padding:40px;}"
-                  ".card{background:white;padding:25px;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,0.1);max-width:360px;margin:auto;}</style></head><body>"
-                  "<div class='card'><h3 style='color:#28a745;'>" + msgTitle + "</h3><p>" + msgBody + "</p></div></body></html>";
-
-    server.send(200, "text/html", html);
+    server.send(200, "text/html", "Configuration saved! Device is restarting...");
     delay(2000);
     ESP.restart();
-  }
+  } 
 }
 
-void setup() {
-  Serial.begin(115200);
-  Wire.begin(21, 22);
-
-  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
-    Serial.println(F("OLED failed"));
-  }
-  display.clearDisplay();
-  display.setTextColor(SSD1306_WHITE);
-  display.setTextSize(1);
-  display.setCursor(0, 0);
-  display.println("Initializing...");
-  display.display();
-
-  if (!particleSensor.begin(Wire, I2C_SPEED_FAST)) {
-    display.clearDisplay();
-    display.setCursor(0, 0);
-    display.println("MAX30102 Not Found!");
-    display.display();
-    while (1);
-  }
-
-  // sensore configuration to activate thr red LED and IR to calculate SpO2
-  particleSensor.setup(0x1F, 4, 2, 200, 411, 4096);
-
-  preferences.begin("wifi-config", true);
-  saved_ssid = preferences.getString("ssid", "");
-  saved_pass = preferences.getString("password", "");
-  preferences.end();
-
-  if (saved_ssid != "") {
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(saved_ssid.c_str(), saved_pass.c_str());
-    int attempts = 0;
-    while (WiFi.status() != WL_CONNECTED && attempts < 10) {
-      delay(500);
-      attempts++;
-    }
-  }
-
-  if (WiFi.status() != WL_CONNECTED) {
-    WiFi.mode(WIFI_AP);
-    WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
-    WiFi.softAP("Health monitoring system");
-    dnsServer.start(DNS_PORT, "*", apIP);
-    server.on("/", handleRoot);
-    server.on("/save", handleSave);
-    server.onNotFound(handleRoot);
-    server.begin();
-  }
-}
-
-void loop() {
-  if (WiFi.status() != WL_CONNECTED) {
-    dnsServer.processNextRequest();
-    server.handleClient();
-  }
-
-  // read Red and IR values
-  irValue = particleSensor.getIR();
-  redValue = particleSensor.getRed();
-
-  // heart rate
-  if (checkForBeat(irValue) == true) {
-    long delta = millis() - lastBeat;
-    lastBeat = millis();
-    beatsPerMinute = 60 / (delta / 1000.0);
-
-    if (beatsPerMinute < 255 && beatsPerMinute > 20) {
-      rates[rateSpot++] = (byte)beatsPerMinute;
-      rateSpot %= 4;
-      beatAvg = 0;
-      for (byte x = 0; x < 4; x++) beatAvg += rates[x];
-      beatAvg /= 4;
-    }
-  }
-
-  //calculate the SpO2 from the Red to IR ration
-  if (irValue > 50000) {
-    float rRatio = ((float)redValue / (float)irValue);
-    // calculate SpO2
-    int calculatedSpo2 = 110 - (25 * rRatio); 
-    if (calculatedSpo2 > 100) calculatedSpo2 = 100;
-    if (calculatedSpo2 < 80) calculatedSpo2 = 80;
-    spo2Val = calculatedSpo2;
-  } else {
-    spo2Val = 0;
-    beatAvg = 0;
-  }
-
-  // sidplay on the OLED
-  display.clearDisplay();
-  display.setCursor(0, 0);
-  display.setTextSize(1);
-  if (WiFi.status() == WL_CONNECTED) {
-    display.print("WiFi: Connected");
-  } else {
-    display.print("WiFi: Setup Mode");
-  }
-
-  display.setCursor(0, 20);
-  if (irValue < 50000) {
-    display.setTextSize(1);
-    display.println("Place Finger...");
-  } else {
-    display.setTextSize(1);
-    display.print("BPM: ");
-    display.println(beatAvg);
-    display.setCursor(0, 40);
-    display.print("SpO2: ");
-    display.print(spo2Val);
-    display.println("%");
-  }
-  display.display();
-
-  // send real data of SpO2 and BPM to server
-  if (WiFi.status() == WL_CONNECTED && (millis() - lastSendTime > sendInterval)) {
-    lastSendTime = millis();
-    if (beatAvg > 0 && spo2Val > 0) {
-      sendDataToServer(beatAvg, spo2Val);
-    }
-  }
-}
-
-void sendDataToServer(int bpm, int spo2) {
-  HTTPClient http;
-  //server URL to send the data
-  http.begin(serverUrl);
-  //add HTTP requests headers
+// Sends telemetry payload to Django web backend using HTTP POST
+void sendDataToServer(int bpm, int spo2) { 
+  HTTPClient http; 
+  http.begin(serverUrl); 
   http.addHeader("Content-Type", "application/json");
   
-  String authHeader = "Token " + String(userToken);
+  String authHeader = "Token " + String(userToken); 
   http.addHeader("Authorization", authHeader.c_str());
-
-  //Json format
-  String jsonPayload = "{";
-  jsonPayload += "\"device\":" + String(deviceId) + ",";
-  jsonPayload += "\"heart_rate\":" + String(bpm) + ",";
-  jsonPayload += "\"oxygen_level\":" + String(spo2);
+  
+  // Format clinical metrics as a structured JSON object
+  String jsonPayload = "{"; 
+  jsonPayload += "\"device\":" + String(deviceId) + ","; 
+  jsonPayload += "\"heart_rate\":" + String(bpm) + ","; 
+  jsonPayload += "\"oxygen_level\":" + String(spo2); 
   jsonPayload += "}";
-
-  //POST request to the server with the JSON payload + receive the response code the response from the server status code
+  
   int httpResponseCode = http.POST(jsonPayload);
+  
+  if (httpResponseCode > 0) { 
+    Serial.print("HTTP Status: "); 
+    Serial.print(httpResponseCode); 
+    String response = http.getString(); 
+    Serial.print(" | Response: "); 
+    Serial.println(response); 
+  } else { 
+    Serial.print("HTTP Error: "); 
+    Serial.println(http.errorToString(httpResponseCode).c_str()); 
+  }
+  http.end(); 
+}
 
-  //evaluate the response code and print the response or error message for debugging purposes
-  if (httpResponseCode > 0) {
-    Serial.print("HTTP Status: ");
-    Serial.print(httpResponseCode);
-    String response = http.getString();
-    Serial.print(" | Response: ");
-    Serial.println(response);
-  } else {
-    Serial.print("HTTP Error: ");
-    Serial.println(http.errorToString(httpResponseCode).c_str());
+void setup() { 
+  Serial.begin(115200); 
+  Wire.begin(21, 22); // Initialize I2C Communication pins (SDA=21, SCL=22)
+  
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { 
+    Serial.println(F("OLED failed")); 
+  } 
+  display.clearDisplay(); 
+  display.setTextColor(SSD1306_WHITE); 
+  display.setTextSize(1); 
+  display.setCursor(0, 0); 
+  display.println("Initializing..."); 
+  display.display();
+  
+  if (!particleSensor.begin(Wire, I2C_SPEED_FAST)) { 
+    display.clearDisplay(); 
+    display.setCursor(0, 0); 
+    display.println("MAX30102 Not Found!"); 
+    display.display(); 
+    while (1); 
   }
   
-  //close the connection to free up the resources
-  http.end();
+  // Sensor configuration: Active Red LED + IR LED to compute SpO2 and Heart Rate
+  particleSensor.setup(0x1F, 4, 2, 200, 411, 4096);
+  
+  // Load saved Wi-Fi credentials from Non-Volatile Storage (NVS)
+  preferences.begin("wifi-config", true); 
+  saved_ssid = preferences.getString("ssid", ""); 
+  saved_pass = preferences.getString("password", ""); 
+  preferences.end();
+  
+  if (saved_ssid != "") { 
+    WiFi.mode(WIFI_STA); 
+    WiFi.begin(saved_ssid.c_str(), saved_pass.c_str()); 
+    int attempts = 0; 
+    while (WiFi.status() != WL_CONNECTED && attempts < 10) { 
+      delay(500); 
+      attempts++; 
+    } 
+  }
+  
+  // Fallback to Captive Portal mode if connection to router fails
+  if (WiFi.status() != WL_CONNECTED) { 
+    WiFi.mode(WIFI_AP); 
+    WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0)); 
+    WiFi.softAP("Health monitoring system"); 
+    dnsServer.start(DNS_PORT, "*", apIP); 
+    server.on("/", handleRoot); 
+    server.on("/save", handleSave); 
+    server.onNotFound(handleRoot); 
+    server.begin(); 
+  } 
+}
+
+void loop() { 
+  // Process captive portal web requests if Wi-Fi is not connected to router
+  if (WiFi.status() != WL_CONNECTED) { 
+    dnsServer.processNextRequest(); 
+    server.handleClient(); 
+  }
+  
+  // Read raw optical signals from MAX30102 sensor
+  irValue = particleSensor.getIR(); 
+  redValue = particleSensor.getRed();
+  
+  // Check if a finger is securely placed on the sensor
+  if (irValue < 50000) { 
+    // Finger removed: reset calculations and clear buffer to prevent noisy telemetry
+    spo2Val = 0; 
+    beatAvg = 0; 
+    rateSpot = 0; 
+    rateCount = 0; 
+    for (byte i = 0; i < 4; i++) rates[i] = 0; 
+  } else { 
+    // Finger is present: track cardiac contractions and calculate pulse wave
+    if (checkForBeat(irValue) == true) { 
+      long delta = millis() - lastBeat; 
+      lastBeat = millis(); 
+      
+      // Prevent wild calculations on the very first cold-start beat
+      if (delta > 250 && delta < 3000) {
+        beatsPerMinute = 60 / (delta / 1000.0);
+        
+        // Accept only realistic physiological human heart rates (40 to 220 BPM)
+        if (beatsPerMinute < 220 && beatsPerMinute > 40) { 
+          rates[rateSpot++] = (byte)beatsPerMinute; 
+          rateSpot %= 4; // Keep index pointer within 0-3 range
+          
+          // Increment actual populated sample size count up to array limit (4)
+          if (rateCount < 4) rateCount++;
+          
+          // Compute the rolling average of the verified heart rate readings
+          int sum = 0;
+          for (byte x = 0; x < rateCount; x++) {
+            sum += rates[x];
+          }
+          beatAvg = sum / rateCount;
+        } 
+      }
+    }
+    
+    // Calculate blood oxygen levels using the Red/IR light absorption ratio
+    float rRatio = ((float)redValue / (float)irValue); 
+    int calculatedSpo2 = 110 - (25 * rRatio); 
+    
+    // Constrain SpO2 readings to medically realistic ranges (80% - 100%)
+    if (calculatedSpo2 > 100) calculatedSpo2 = 100; 
+    if (calculatedSpo2 < 80) calculatedSpo2 = 80; 
+    spo2Val = calculatedSpo2; 
+  }
+  
+  // Refresh the local OLED display every 200ms to avoid system lagging
+  if (millis() - lastDisplayTime > 200) { 
+    lastDisplayTime = millis();
+    display.clearDisplay(); 
+    display.setCursor(0, 0); 
+    display.setTextSize(1); 
+    
+    if (WiFi.status() == WL_CONNECTED) { 
+      display.print("WiFi: Connected"); 
+    } else { 
+      display.print("WiFi: Setup Mode"); 
+    }
+    
+    display.setCursor(0, 20); 
+    if (irValue < 50000) { 
+      display.println("Place Finger..."); 
+    } else { 
+      display.print("BPM: "); 
+      display.println(beatAvg); 
+      display.setCursor(0, 40); 
+      display.print("SpO2: "); 
+      display.print(spo2Val); 
+      display.println("%"); 
+    } 
+    display.display(); 
+  }
+  
+  // Telemetry Transmission: Send data to local Django webserver via HTTP POST
+  if (WiFi.status() == WL_CONNECTED && (millis() - lastSendTime > sendInterval)) { 
+    lastSendTime = millis(); 
+    // Transmit data only when valid physiological metrics are stabilized
+    if (beatAvg > 40 && spo2Val > 80) { 
+      sendDataToServer(beatAvg, spo2Val); 
+    } 
+  } 
 }
