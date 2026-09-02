@@ -1,7 +1,7 @@
 from celery import shared_task
 from .email import EmergencyEmailService
 
-@shared_task(bind=True, max_retries=3, default_retry_delay=5, time_limit=10)
+@shared_task(max_retries=3, default_retry_delay=5, time_limit=10)
 def send_async_critical_alert(email_target, device_name, heart_rate, oxygen_level, timestamp):
 
     print(f"[CELERY TASK] Starting asynchronous email delivery to {email_target}...")
