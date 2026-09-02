@@ -1,20 +1,31 @@
-import requests, random, time
-#local Address
-url_address = 'http://127.0.0.1:8000/vitals/'
+import random
+import time
+import requests
 
-admin_token = 'Token 4319a69e17510dd61229579d803570dec26575da'
+URL = 'http://localhost:8000/vitals/'
 
-vitals = {}
+# user Token
+USER_TOKEN = ''
+DEVICE_ID = 'ESP32-1001'
 
-#create random data
-for i in range(200):
-    heart_rate = random.randint(40, 150)
-    oxygen_level = random.randint(80, 100)
+headers = {'Authorization': f'Token {USER_TOKEN}'}
 
-    vitals = {'device': '1', 'heart_rate': heart_rate, 'oxygen_level': oxygen_level}
+for i in range(1, 51):
+  heart_rate = random.randint(60, 100)
+  oxygen_level = random.randint(95, 99)
 
-    result = requests.post(url=url_address, json=vitals, headers={'Authorization':admin_token})
+  payload = {
+      'device': 22,
+      'heart_rate': heart_rate,
+      'oxygen_level': oxygen_level,
+  }
 
-    print(f'request {i}: {result.status_code}') #print the request status code to make sure requests are sent to the server
+  try:
+    response = requests.post(URL, json=payload, headers=headers)
+    print(f'[{i}/50] Status: {response.status_code} | Data: {payload}')
+    if response.status_code not in (200, 201):
+      print(f'    Error details: {response.text}')
+  except Exception as e:
+    print(f'Connection failed: {e}')
 
-    time.sleep(1) # sleep for one sec to be more similar to the actual device
+  time.sleep(1)
