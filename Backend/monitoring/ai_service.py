@@ -1,91 +1,82 @@
 import os
 import json
 from dotenv import load_dotenv
-import together
-import requests
+from openai import OpenAI
+from pathlib import Path
 
 load_dotenv()
 
-# TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(dotenv_path=BASE_DIR / ".env")
+
+# Get GapGPT API Key from environment variables
+GAPGPT_API_KEY = os.getenv("GAPGPT_API_KEY")
+GAPGPT_BASE_URL = os.getenv("GAPGPT_BASE_URL", "https://api.gapgpt.app/v1")
 
 def analyze_vitals_with_ai(vitals_data_text, is_session=False, lang='fa'):
     """
-    Sends vital signs data to Together AI (Qwen2.5 model) via SOCKS5 Proxy.
+    Sends vital signs data to GapGPT using their official SDK client wrapper.
     Returns health analysis as a dictionary containing both 'fa' and 'en' keys.
     """
-    if not GEMINI_API_KEY:
-        return {"error": "TOGETHER_API_KEY is not set in the .env file!"}
-
-    proxy_url = os.getenv("HTTP_PROXY", "socks5://192.168.132.50:10301")
-    # os.environ["HTTP_PROXY"] = proxy_url
-    # os.environ["HTTPS_PROXY"] = proxy_url
-    # os.environ["ALL_PROXY"] = proxy_url
-    proxies = None
-
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
-    context_desc = "a recent measurement session" if is_session else "a specific time period"
-
-    prompt = f"""
-    You are an intelligent medical vital signs analysis assistant.
-    Analyze the following patient vital signs data ({context_desc}):
-    {vitals_data_text}
-
-    Return your response strictly as a VALID JSON object with no markdown formatting around it.
-    Follow this exact JSON structure:
-    {{
-        "fa": "۱. میانگین و وضعیت کلی: ...\\n۲. آنومالی یا نوسان شدید: ...\\n۳. توصیه اولیه پزشکی: ...",
-        "en": "1. Overall Status & Average: ...\\n2. Anomalies/Spikes: ...\\n3. Initial Medical Advice: ..."
-    }}
-    """
-
-    payload = {
-        "contents": [
-            {
-                "parts": [
-                    {"text": prompt}
-                ]
-            }
-        ],
-        "generationConfig": {
-            "responseMimeType": "application/json"
+    if not GAPGPT_API_KEY:
+        return {
+            "fa": "کلید API مربوط به GapGPT تنظیم نشده است. لطفا فایل .env را بررسی کنید.",
+            "en": "GAPGPT_API_KEY is not set in the .env file!"
         }
-    }
 
-    headers = {
-        "Content-Type": "application/json"
-    }
+    context_desc = "a recent measurement session" if is_session else "a specific time period"
+    prompt = f"""
+        You are an intelligent medical vital signs analysis assistant.
+        Analyze the following patient vital signs data ({context_desc}):
+        {vitals_data_text}
+    
+        Return your response strictly as a VALID, RAW JSON object with no markdown formatting around it (no ```json wrappers, just raw braces).
+        Follow this exact JSON structure:
+        {{
+            "fa": "۱. میانگین و وضعیت کلی: ...\\n۲. آنومالی یا نوسان شدید: ...\\n۳. توصیه اولیه پزشکی: ...",
+            "en": "1. Overall Status & Average: ...\\n2. Anomalies/Spikes: ...\\n3. Initial Medical Advice: ..."
+        }}"""
 
     try:
-        response = requests.post(url, headers=headers, json=payload, proxies=proxies, timeout=15)
-        response.raise_for_status()
+        # Initialize OpenAI client with GapGPT configurations
+        client = OpenAI(
+            api_key=GAPGPT_API_KEY,
+            base_url=GAPGPT_BASE_URL
+        )
+
+        # Call the custom responses creator endpoint provided by GapGPT
+        response = client.responses.create(
+            model="gapgpt-qwen-3.6",
+            input=prompt
+        )
+
+        content = response.output_text.strip()
         
-        response_data = response.json()
-        
-        raw_text_content = response_data['candidates']['content']['parts']['text']
-        
-        data = json.loads(raw_text_content)
-        
+        # Clean markdown formatting if present
+        if content.startswith("```"):
+            lines = content.splitlines()
+            if lines[0].startswith("```"):
+                lines = lines[1:]
+            if lines[-1].startswith("```"):
+                lines = lines[:-1]
+            content = "\n".join(lines).strip()
+
+        # Parse JSON output
+        data = json.loads(content)
         return {
             "fa": data.get("fa", "تحلیلی دریافت نشد."),
             "en": data.get("en", "No analysis received.")
         }
-
-    except requests.exceptions.RequestException as req_err:
-        print(f"[Gemini API Error] Connection/HTTP issue: {str(req_err)}")
+    except json.JSONDecodeError:
+        # Fallback to displaying raw content in both languages if JSON parsing fails
         return {
-            "fa": "خطا در برقراری ارتباط با سرور هوش مصنوعی جیمینای. لطفاً وضعیت پروکسی سرور را بررسی کنید.",
-            "en": f"Gemini API connection error: {str(req_err)}"
-        }
-    except (json.JSONDecodeError, KeyError, IndexError) as parse_err:
-        print(f"[Gemini API Error] Parsing failed. Raw response was: {response.text if 'response' in locals() else 'None'}")
-        return {
-            "fa": "خطا در پردازش اطلاعات دریافتی از هوش مصنوعی.",
-            "en": f"Parsing response failed: {str(parse_err)}"
+            "fa": content,
+            "en": content
         }
     except Exception as e:
-        print(f"[Gemini API Error] Unexpected error: {str(e)}")
+        print(f"Error connecting to GapGPT: {str(e)}")
+        err_msg = f"Error receiving response from AI: {str(e)}"
         return {
-            "fa": "خطای غیرمنتظره در سیستم هوش مصنوعی.",
-            "en": f"Unexpected error: {str(e)}"
+            "fa": 'خطا در دریافت پاسخ از هوش مصنوعی (GapGPT)',
+            "en": err_msg
         }
