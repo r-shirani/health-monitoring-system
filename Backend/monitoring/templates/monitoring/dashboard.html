@@ -943,17 +943,6 @@
         });
 
         applyLanguage(currentLang);
-
-        // const savedAnalysis = localStorage.getItem('last_ai_analysis');
-        // if (savedAnalysis) {
-        //     try {
-        //         currentAnalysisObj = JSON.parse(savedAnalysis);
-        //         document.getElementById('ai-result-container').style.display = 'block';
-        //         displayAnalysisByLang();
-        //     } catch (e) {
-        //         console.error("Error parsing saved analysis", e);
-        //     }
-        // }
     });
 
     function toggleAiCustomDate() {
@@ -1254,7 +1243,6 @@
                 }
 
                 currentAnalysisObj = data.analysis;
-                //localStorage.setItem('last_ai_analysis', JSON.stringify(currentAnalysisObj));
                 displayAnalysisByLang();
             })
             .catch(() => {
@@ -1295,7 +1283,6 @@
                 }
 
                 currentAnalysisObj = data.analysis;
-                //localStorage.setItem('last_ai_analysis', JSON.stringify(currentAnalysisObj));
                 displayAnalysisByLang();
             })
             .catch(() => {
@@ -1357,6 +1344,14 @@
         }
     };
 
+    const commonYAxisOptions = {
+        beginAtZero: false,
+        grace: '10%',
+        ticks: {
+            precision: 0
+        }
+    };
+
     const ctxHeart = document.getElementById('heartRateChart').getContext('2d');
     const heartRateChart = new Chart(ctxHeart, {
         type: 'line',
@@ -1375,7 +1370,10 @@
         options: { 
             responsive: true, 
             animation: { duration: 0 },
-            scales: { x: commonXAxisOptions }
+            scales: { 
+                x: commonXAxisOptions,
+                y: commonYAxisOptions
+            }
         }
     });
 
@@ -1397,7 +1395,10 @@
         options: { 
             responsive: true, 
             animation: { duration: 0 },
-            scales: { x: commonXAxisOptions }
+            scales: { 
+                x: commonXAxisOptions,
+                y: commonYAxisOptions
+            }
         }
     });
     
