@@ -17,7 +17,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 // MAX30102 Sensor Object
 MAX30105 particleSensor;
 
-// Local Network Server Endpoint Settings
+// Local Network Server Endpoint Settings (Configured for mobile hotspot IP)
 const char* serverUrl = "http://192.168.1.104:8000/vitals/";
 const char* userToken = "46e3c4ffa08e942f0e6853452aeb5c026ae56397";
 const int deviceId = 22;
@@ -187,6 +187,13 @@ void setup() {
       delay(500); 
       attempts++; 
     } 
+  }
+  
+  // Print ESP32 local IP to Serial Monitor for testing and ping diagnostics
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("");
+    Serial.print("Connected successfully! ESP32 IP Address: ");
+    Serial.println(WiFi.localIP());
   }
   
   // Fallback to Captive Portal mode if connection to router fails
